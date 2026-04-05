@@ -1,0 +1,6 @@
+{
+  "model_name": "RandomForest",
+  "run_id": "679c654861634b3089f26cce497523b2",
+  "roc_auc": 0.9169614414486842,
+  "intervention_threshold": 0.3
+}
