@@ -27,7 +27,7 @@ ROOT = Path(__file__).parent.parent
 DATA_PATH = ROOT / "data" / "online_shoppers_intention.csv"
 META_PATH = ROOT / "models" / "best_model_meta.json"
 
-API_BASE = "http://localhost:8000"
+API_BASE = "https://shopper-intervention.onrender.com"
 
 # ---------------------------------------------------------------------------
 # Page config
