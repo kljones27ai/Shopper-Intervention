@@ -289,6 +289,18 @@ def main():
 
     save_best_model_metadata(best_name, best_run_id, best_auc, models_dir)
 
+    client = mlflow.MlflowClient()
+    mv = mlflow.register_model(f"runs:/{best_run_id}/model", MODEL_REGISTRY_NAME)
+
+    # Set alias on the specific version
+    client.set_registered_model_alias(MODEL_REGISTRY_NAME, "champion", mv.version)
+    client.set_model_version_tag(MODEL_REGISTRY_NAME, mv.version, "roc_auc", str(best_auc))
+    client.set_model_version_tag(MODEL_REGISTRY_NAME, mv.version, "model_name", best_name)
+
+    second_best = sorted(results, key=lambda r: -r[2])[1]
+    mv2 = mlflow.register_model(f"runs:/{second_best[1]}/model", MODEL_REGISTRY_NAME)
+    client.set_registered_model_alias(MODEL_REGISTRY_NAME, "challenger", mv2.version)
+
     # --- Leaderboard ---
     print("\n📊 Model Leaderboard (Test ROC-AUC):")
     print(f"  {'Model':<22} {'ROC-AUC':>10}  {'Run ID'}")

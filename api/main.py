@@ -17,6 +17,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+import mlflow
 import joblib
 import numpy as np
 import pandas as pd
@@ -41,6 +42,30 @@ pipeline = None
 model_meta = {}
 
 def load_model():
+    global pipeline, model_meta
+
+    mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+
+    # Resolve alias to get version metadata
+    client = mlflow.MlflowClient()
+    target = client.get_model_version_by_alias(MODEL_REGISTRY_NAME, MODEL_ALIAS)
+
+    # Load the actual sklearn pipeline
+    model_uri = f"models:/{MODEL_REGISTRY_NAME}@{MODEL_ALIAS}"
+    pipeline = mlflow.sklearn.load_model(model_uri)
+
+    model_meta = {
+        "model_name": target.tags.get("model_name", "unknown"),
+        "run_id": target.run_id,
+        "version": target.version,
+        "stage": MODEL_ALIAS,
+        "roc_auc": float(target.tags.get("roc_auc", 0)),
+        "intervention_threshold": INTERVENTION_THRESHOLD,
+    }
+
+    print(f"✅ Loaded model alias='{MODEL_ALIAS}' from {model_uri}")
+    
+def load_model_best():
     global pipeline, model_meta
     if not MODEL_PATH.exists():
         raise FileNotFoundError(
@@ -151,6 +176,9 @@ class BatchResult(BaseModel):
 # Helpers
 # ---------------------------------------------------------------------------
 
+MLFLOW_TRACKING_URI = "http://localhost:5050"
+MODEL_ALIAS = os.getenv("MODEL_ALIAS", "champion")
+MODEL_REGISTRY_NAME = "shopper_best_model"
 INTERVENTION_THRESHOLD = 0.30  # fallback if meta not loaded
 
 def _predict_session(session: SessionFeatures) -> PredictionResult:
