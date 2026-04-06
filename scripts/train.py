@@ -58,56 +58,51 @@ INTERVENTION_THRESHOLD = 0.30
 
 
 def build_model_configs():
-    """Return list of (name, estimator, param_dict) tuples."""
     return [
         (
-            "LogisticRegression",
-            LogisticRegression(
-                max_iter=1000,
-                class_weight="balanced",   # handles class imbalance (~84% no-purchase)
-                C=1.0,
-                solver="lbfgs",
-                random_state=RANDOM_STATE,
-            ),
-            {
-                "C": 1.0,
-                "max_iter": 1000,
-                "class_weight": "balanced",
-                "solver": "lbfgs",
-            },
+            "LR_baseline",
+            LogisticRegression(C=1.0, class_weight="balanced", max_iter=1000, solver="lbfgs", random_state=RANDOM_STATE),
+            {"C": 1.0, "solver": "lbfgs"},
         ),
         (
-            "DecisionTree",
-            DecisionTreeClassifier(
-                max_depth=8,
-                min_samples_split=20,
-                min_samples_leaf=10,
-                class_weight="balanced",
-                random_state=RANDOM_STATE,
-            ),
-            {
-                "max_depth": 8,
-                "min_samples_split": 20,
-                "min_samples_leaf": 10,
-                "class_weight": "balanced",
-            },
+            "LR_high_regularization",
+            LogisticRegression(C=0.01, class_weight="balanced", max_iter=1000, solver="lbfgs", random_state=RANDOM_STATE),
+            {"C": 0.01, "solver": "lbfgs"},
         ),
         (
-            "RandomForest",
-            RandomForestClassifier(
-                n_estimators=200,
-                max_depth=12,
-                min_samples_leaf=5,
-                class_weight="balanced",
-                n_jobs=-1,
-                random_state=RANDOM_STATE,
-            ),
-            {
-                "n_estimators": 200,
-                "max_depth": 12,
-                "min_samples_leaf": 5,
-                "class_weight": "balanced",
-            },
+            "LR_L1",
+            LogisticRegression(C=1.0, penalty="l1", class_weight="balanced", max_iter=1000, solver="saga", random_state=RANDOM_STATE),
+            {"C": 1.0, "penalty": "l1", "solver": "saga"},
+        ),
+        (
+            "DT_shallow",
+            DecisionTreeClassifier(max_depth=4, class_weight="balanced", random_state=RANDOM_STATE),
+            {"max_depth": 4},
+        ),
+        (
+            "DT_medium",
+            DecisionTreeClassifier(max_depth=8, min_samples_leaf=10, class_weight="balanced", random_state=RANDOM_STATE),
+            {"max_depth": 8, "min_samples_leaf": 10},
+        ),
+        (
+            "DT_entropy",
+            DecisionTreeClassifier(max_depth=8, criterion="entropy", class_weight="balanced", random_state=RANDOM_STATE),
+            {"max_depth": 8, "criterion": "entropy"},
+        ),
+        (
+            "RF_baseline",
+            RandomForestClassifier(n_estimators=200, max_depth=12, class_weight="balanced", n_jobs=-1, random_state=RANDOM_STATE),
+            {"n_estimators": 200, "max_depth": 12, "max_features": "sqrt"},
+        ),
+        (
+            "RF_log2_features",
+            RandomForestClassifier(n_estimators=200, max_depth=12, max_features="log2", class_weight="balanced", n_jobs=-1, random_state=RANDOM_STATE),
+            {"n_estimators": 200, "max_depth": 12, "max_features": "log2"},
+        ),
+        (
+            "RF_deep",
+            RandomForestClassifier(n_estimators=300, max_depth=None, max_features="sqrt", class_weight="balanced", n_jobs=-1, random_state=RANDOM_STATE),
+            {"n_estimators": 300, "max_depth": "None", "max_features": "sqrt"},
         ),
     ]
 
