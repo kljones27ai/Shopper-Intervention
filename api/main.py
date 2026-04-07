@@ -50,37 +50,27 @@ def load_model():
 
     mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 
-    # Resolve alias to get version metadata
-    client = mlflow.MlflowClient()
-    target = client.get_model_version_by_alias(MODEL_REGISTRY_NAME, MODEL_ALIAS)
+    if not META_PATH.exists():
+        raise FileNotFoundError(f"No metadata found at {META_PATH}")
 
-    # Load the actual sklearn pipeline
-    model_uri = f"models:/{MODEL_REGISTRY_NAME}@{MODEL_ALIAS}"
+    full_meta = json.loads(META_PATH.read_text())
+    champion = full_meta["champion"]
+    run_id = champion["run_id"]
+
+    model_uri = f"runs:/{run_id}/model"
     pipeline = mlflow.sklearn.load_model(model_uri)
 
     model_meta = {
-        "model_name": target.tags.get("model_name", "unknown"),
-        "run_id": target.run_id,
-        "version": target.version,
-        "stage": MODEL_ALIAS,
-        "roc_auc": float(target.tags.get("roc_auc", 0)),
-        "intervention_threshold": INTERVENTION_THRESHOLD,
+        "model_name": champion["model_name"],
+        "run_id": run_id,
+        "roc_auc": champion["roc_auc"],
+        "intervention_threshold": champion["intervention_threshold"],
+        "challenger": full_meta.get("challenger"),
     }
 
-    print(f"✅ Loaded model alias='{MODEL_ALIAS}' from {model_uri}")
+    print(f"✅ Loaded champion model run_id='{run_id}' from {model_uri}")
     
-def load_model_best():
-    global pipeline, model_meta
-    if not MODEL_PATH.exists():
-        raise FileNotFoundError(
-            f"Model not found at {MODEL_PATH}. Run 'python scripts/train.py' first."
-        )
-    pipeline = joblib.load(MODEL_PATH)
-    if META_PATH.exists():
-        model_meta = json.loads(META_PATH.read_text())
-    print(f"✅ Model loaded: {model_meta.get('model_name', 'unknown')}  "
-          f"(ROC-AUC = {model_meta.get('roc_auc', '?'):.4f})")
-
+    
 # ---------------------------------------------------------------------------
 # App
 # ---------------------------------------------------------------------------

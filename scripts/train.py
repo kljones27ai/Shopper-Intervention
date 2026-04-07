@@ -347,31 +347,28 @@ def main():
     best = max(results, key=lambda r: r[2])
     best_name, best_run_id, best_auc, best_pipeline = best
 
-    sorted_results = sorted(results, key=lambda r: -r[2])
-    
-    client = mlflow.MlflowClient()
-
-    # Create model version directly using the client
-    mv = client.create_model_version(
-        name=MODEL_REGISTRY_NAME,
-        source=f"runs:/{best_run_id}/model",
-        run_id=best_run_id,
-        await_creation_for=0,  # ← don't wait, just create
-    )
-    client.set_registered_model_alias(MODEL_REGISTRY_NAME, "champion", mv.version)
-    client.set_model_version_tag(MODEL_REGISTRY_NAME, mv.version, "roc_auc", str(best_auc))
-    client.set_model_version_tag(MODEL_REGISTRY_NAME, mv.version, "model_name", best_name)
-
-    if len(sorted_results) > 1:
-        second_best_name, second_best_run_id, second_best_auc, _ = sorted_results[1]
-        mv2 = client.create_model_version(
-            name=MODEL_REGISTRY_NAME,
-            source=f"runs:/{second_best_run_id}/model",
-            run_id=second_best_run_id,
-        )
-        client.set_registered_model_alias(MODEL_REGISTRY_NAME, "challenger", mv2.version)
-        client.set_model_version_tag(MODEL_REGISTRY_NAME, mv2.version, "roc_auc", str(second_best_auc))
-        client.set_model_version_tag(MODEL_REGISTRY_NAME, mv2.version, "model_name", second_best_name)
+	sorted_results = sorted(results, key=lambda r: -r[2])
+	meta = {
+		"champion": {
+			"model_name": best_name,
+			"run_id": best_run_id,
+			"roc_auc": best_auc,
+			"intervention_threshold": INTERVENTION_THRESHOLD,
+		}
+	}
+	if len(sorted_results) > 1:
+		second_best_name, second_best_run_id, second_best_auc, _ = sorted_results[1]
+		meta["challenger"] = {
+			"model_name": second_best_name,
+			"run_id": second_best_run_id,
+			"roc_auc": second_best_auc,
+			"intervention_threshold": INTERVENTION_THRESHOLD,
+		}
+	
+	meta_path = Path("models/best_model_meta.json")
+	meta_path.parent.mkdir(exist_ok=True)
+	meta_path.write_text(json.dumps(meta, indent=2))
+	print(f"✅ Model metadata saved → {meta_path}")
     
     print("\n📊 Model Leaderboard (Test ROC-AUC):")
     print(f"  {'Model':<22} {'ROC-AUC':>10}  {'Run ID'}")
