@@ -290,29 +290,25 @@ def save_best_model_metadata(model_name: str, run_id: str, roc_auc: float, model
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Train shopper purchase prediction models")
+    parser.add_argument("--data", default="data/online_shoppers_intention.csv")
+    parser.add_argument("--models-dir", default="models")
+    args = parser.parse_args()
+
     is_cloud = os.getenv("RENDER") == "true"
 
+    # Load overrides if passed from API
+    overrides_path = os.getenv("TRAIN_OVERRIDES_PATH")
+    overrides = json.loads(Path(overrides_path).read_text()) if overrides_path else {}
+
     if is_cloud:
-        # Lightweight config for cloud deployment
-        configs = [
+        model_configs = [
             ("LR_baseline", LogisticRegression(C=1.0, class_weight="balanced", max_iter=1000, solver="lbfgs", random_state=RANDOM_STATE), {"C": 1.0}),
             ("DT_medium", DecisionTreeClassifier(max_depth=8, min_samples_leaf=10, class_weight="balanced", random_state=RANDOM_STATE), {"max_depth": 8}),
             ("XGBoost", XGBClassifier(n_estimators=100, learning_rate=0.05, max_depth=4, subsample=0.8, scale_pos_weight=5, eval_metric="auc", random_state=RANDOM_STATE, verbosity=0), {"n_estimators": 100}),
         ]
     else:
-        configs = build_model_configs(overrides)
-        parser = argparse.ArgumentParser(description="Train shopper purchase prediction models")
-        parser.add_argument(
-            "--data",
-            default="data/online_shoppers_intention.csv",
-            help="Path to the dataset CSV",
-        )
-        parser.add_argument(
-            "--models-dir",
-            default="models",
-            help="Directory to save best model artifacts",
-        )
-    args = parser.parse_args()
+        model_configs = build_model_configs(overrides)
 
     data_path = Path(args.data)
     models_dir = Path(args.models_dir)
@@ -322,7 +318,6 @@ def main():
         print(f"ERROR: data file not found: {data_path}")
         sys.exit(1)
 
-    # --- Load data ---
     print(f"\n📂 Loading data from {data_path} ...")
     X, y = load_data(str(data_path))
     print(f"   Rows: {len(X):,}  |  Purchase rate: {y.mean()*100:.1f}%")
@@ -332,12 +327,10 @@ def main():
     )
     print(f"   Train: {len(X_train):,}  |  Test: {len(X_test):,}")
 
-    # --- MLflow setup ---
     mlflow.set_experiment(EXPERIMENT_NAME)
     print(f"\n🔬 MLflow experiment: '{EXPERIMENT_NAME}'")
 
     preprocessor = build_preprocessor()
-    model_configs = build_model_configs()
 
     results = []
     for model_name, estimator, params in model_configs:
@@ -346,7 +339,6 @@ def main():
         )
         results.append((model_name, run_id, roc_auc, pipeline))
 
-    # --- Select best model by test ROC-AUC ---
     best = max(results, key=lambda r: r[2])
     best_name, best_run_id, best_auc, best_pipeline = best
 
@@ -354,7 +346,6 @@ def main():
     print(f"  🏆 BEST MODEL: {best_name}  (ROC-AUC = {best_auc:.4f})")
     print(f"{'='*60}")
 
-    # Save best pipeline with joblib for the API
     import joblib
     model_path = models_dir / "best_model.pkl"
     joblib.dump(best_pipeline, model_path)
@@ -364,21 +355,16 @@ def main():
 
     client = mlflow.MlflowClient()
     mv = mlflow.register_model(f"runs:/{best_run_id}/model", MODEL_REGISTRY_NAME)
-
-    # Set alias on the specific version
     client.set_registered_model_alias(MODEL_REGISTRY_NAME, "champion", mv.version)
     client.set_model_version_tag(MODEL_REGISTRY_NAME, mv.version, "roc_auc", str(best_auc))
     client.set_model_version_tag(MODEL_REGISTRY_NAME, mv.version, "model_name", best_name)
 
-    second_best = sorted(results, key=lambda r: -r[2])[1]
-    mv2 = mlflow.register_model(f"runs:/{second_best[1]}/model", MODEL_REGISTRY_NAME)
-    client.set_registered_model_alias(MODEL_REGISTRY_NAME, "challenger", mv2.version)
+    sorted_results = sorted(results, key=lambda r: -r[2])
+    if len(sorted_results) > 1:
+        second_best = sorted_results[1]
+        mv2 = mlflow.register_model(f"runs:/{second_best[1]}/model", MODEL_REGISTRY_NAME)
+        client.set_registered_model_alias(MODEL_REGISTRY_NAME, "challenger", mv2.version)
 
-    overrides_path = os.getenv("TRAIN_OVERRIDES_PATH")
-    overrides = json.loads(Path(overrides_path).read_text()) if overrides_path else {}
-    configs = build_model_configs(overrides)
-
-    # --- Leaderboard ---
     print("\n📊 Model Leaderboard (Test ROC-AUC):")
     print(f"  {'Model':<22} {'ROC-AUC':>10}  {'Run ID'}")
     print(f"  {'-'*22} {'-'*10}  {'-'*36}")
@@ -386,9 +372,7 @@ def main():
         marker = " ← best" if name == best_name else ""
         print(f"  {name:<22} {auc:>10.4f}  {run_id}{marker}")
 
-    print(f"\n✅ Training complete. Start API with:")
-    print(f"   uvicorn api.main:app --reload --port 8000")
-    print(f"   streamlit run ui/app.py\n")
+    print(f"\n✅ Training complete.")
 
 
 if __name__ == "__main__":
