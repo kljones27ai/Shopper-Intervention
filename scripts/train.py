@@ -42,8 +42,12 @@ from sklearn.metrics import (
 from sklearn.pipeline import Pipeline
 
 mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI"))
-os.environ["MLFLOW_TRACKING_USERNAME"] = os.getenv("MLFLOW_TRACKING_USERNAME")
-os.environ["MLFLOW_TRACKING_PASSWORD"] = os.getenv("MLFLOW_TRACKING_PASSWORD")
+
+# Set DagsHub artifact store credentials
+os.environ["MLFLOW_TRACKING_USERNAME"] = os.getenv("MLFLOW_TRACKING_USERNAME", "")
+os.environ["MLFLOW_TRACKING_PASSWORD"] = os.getenv("MLFLOW_TRACKING_PASSWORD", "")
+os.environ["MLFLOW_HTTP_REQUEST_HEADER_username"] = os.getenv("MLFLOW_TRACKING_USERNAME", "")
+os.environ["MLFLOW_HTTP_REQUEST_HEADER_password"] = os.getenv("MLFLOW_TRACKING_PASSWORD", "")
 
 # Allow running from project root
 sys.path.insert(0, str(Path(__file__).parent.parent))
