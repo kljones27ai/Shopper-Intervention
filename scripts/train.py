@@ -15,6 +15,7 @@ Usage:
 import argparse
 import os
 import sys
+import time
 import warnings
 import json
 from pathlib import Path
@@ -267,8 +268,8 @@ def train_and_log(model_name, estimator, params, X_train, X_test, y_train, y_tes
             pipeline,
             artifact_path="model",
             registered_model_name=None,
-            input_example=X_train.iloc[:3],
         )
+        time.sleep(10)
 
         run_id = run.info.run_id
         print(f"  MLflow run_id: {run_id}")
