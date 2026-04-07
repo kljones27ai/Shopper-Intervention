@@ -50,6 +50,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from scripts.features import load_data, build_preprocessor, ALL_FEATURES, TARGET
 
 warnings.filterwarnings("ignore")
+warnings.filterwarnings("ignore", category=UserWarning, module="mlflow")
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -270,17 +271,11 @@ def train_and_log(model_name, estimator, params, X_train, X_test, y_train, y_tes
             registered_model_name=None,
         )
 
-        # Inside train_and_log, after log_model, get the logged model info
-        logged_model = mlflow.last_active_run().info
-        model_uri = f"runs
-
-        # Register while run is still open
+       # Register while run is still open
         run_id = run.info.run_id
-        mv = mlflow.register_model(f"runs:/{run_id}/model", MODEL_REGISTRY_NAME)
-        
         print(f"  MLflow run_id: {run_id}")
-        return run_id, metrics["roc_auc"], pipeline, mv.version
-
+        return run_id, metrics["roc_auc"], pipeline
+        
 
 def save_best_model_metadata(model_name: str, run_id: str, roc_auc: float, models_dir: Path):
     """Write metadata JSON so the API server can load the right model."""
@@ -349,18 +344,20 @@ def main():
     best = max(results, key=lambda r: r[2])
     best_name, best_run_id, best_auc, best_pipeline, best_version = best
 
-    # Set aliases using version numbers directly — no search needed
     client = mlflow.MlflowClient()
-    client.set_registered_model_alias(MODEL_REGISTRY_NAME, "champion", best_version)
-    client.set_model_version_tag(MODEL_REGISTRY_NAME, best_version, "roc_auc", str(best_auc))
-    client.set_model_version_tag(MODEL_REGISTRY_NAME, best_version, "model_name", best_name)
+
+    mv = mlflow.register_model(f"runs:/{best_run_id}/model", MODEL_REGISTRY_NAME)
+    client.set_registered_model_alias(MODEL_REGISTRY_NAME, "champion", mv.version)
+    client.set_model_version_tag(MODEL_REGISTRY_NAME, mv.version, "roc_auc", str(best_auc))
+    client.set_model_version_tag(MODEL_REGISTRY_NAME, mv.version, "model_name", best_name)
 
     sorted_results = sorted(results, key=lambda r: -r[2])
     if len(sorted_results) > 1:
-        second_best_name, second_best_run_id, second_best_auc, _, second_version = sorted_results[1]
-        client.set_registered_model_alias(MODEL_REGISTRY_NAME, "challenger", second_version)
-        client.set_model_version_tag(MODEL_REGISTRY_NAME, second_version, "roc_auc", str(second_best_auc))
-        client.set_model_version_tag(MODEL_REGISTRY_NAME, second_version, "model_name", second_best_name)    
+        second_best_name, second_best_run_id, second_best_auc, _ = sorted_results[1]
+        mv2 = mlflow.register_model(f"runs:/{second_best_run_id}/model", MODEL_REGISTRY_NAME)
+        client.set_registered_model_alias(MODEL_REGISTRY_NAME, "challenger", mv2.version)
+        client.set_model_version_tag(MODEL_REGISTRY_NAME, mv2.version, "roc_auc", str(second_best_auc))
+        client.set_model_version_tag(MODEL_REGISTRY_NAME, mv2.version, "model_name", second_best_name)
 
     print("\n📊 Model Leaderboard (Test ROC-AUC):")
     print(f"  {'Model':<22} {'ROC-AUC':>10}  {'Run ID'}")
