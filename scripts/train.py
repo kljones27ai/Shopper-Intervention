@@ -290,17 +290,28 @@ def save_best_model_metadata(model_name: str, run_id: str, roc_auc: float, model
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Train shopper purchase prediction models")
-    parser.add_argument(
-        "--data",
-        default="data/online_shoppers_intention.csv",
-        help="Path to the dataset CSV",
-    )
-    parser.add_argument(
-        "--models-dir",
-        default="models",
-        help="Directory to save best model artifacts",
-    )
+    is_cloud = os.getenv("RENDER") == "true"
+
+    if is_cloud:
+        # Lightweight config for cloud deployment
+        configs = [
+            ("LR_baseline", LogisticRegression(C=1.0, class_weight="balanced", max_iter=1000, solver="lbfgs", random_state=RANDOM_STATE), {"C": 1.0}),
+            ("DT_medium", DecisionTreeClassifier(max_depth=8, min_samples_leaf=10, class_weight="balanced", random_state=RANDOM_STATE), {"max_depth": 8}),
+            ("XGBoost", XGBClassifier(n_estimators=100, learning_rate=0.05, max_depth=4, subsample=0.8, scale_pos_weight=5, eval_metric="auc", random_state=RANDOM_STATE, verbosity=0), {"n_estimators": 100}),
+        ]
+    else:
+        configs = build_model_configs(overrides)
+        parser = argparse.ArgumentParser(description="Train shopper purchase prediction models")
+        parser.add_argument(
+            "--data",
+            default="data/online_shoppers_intention.csv",
+            help="Path to the dataset CSV",
+        )
+        parser.add_argument(
+            "--models-dir",
+            default="models",
+            help="Directory to save best model artifacts",
+        )
     args = parser.parse_args()
 
     data_path = Path(args.data)
