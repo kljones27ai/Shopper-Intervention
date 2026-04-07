@@ -15,15 +15,12 @@ Usage:
 import argparse
 import os
 import sys
-import time
 import warnings
 import json
 from pathlib import Path
 
 import mlflow
 import mlflow.sklearn
-import numpy as np
-import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -41,17 +38,14 @@ from sklearn.metrics import (
 )
 from sklearn.pipeline import Pipeline
 
+import dagshub.auth
+dagshub.auth.add_app_token(token=os.getenv("DAGSHUB_TOKEN", ""), host="dagshub.com")
 import dagshub
-os.environ["DAGSHUB_USER_TOKEN"] = os.getenv("DAGSHUB_TOKEN", "")
-dagshub.init(
-    repo_owner='smbrownai',
-    repo_name='shopper_intervention',
-    mlflow=True
-)
+dagshub.init(repo_owner='smbrownai', repo_name='shopper_intervention', mlflow=True)
 
 # Allow running from project root
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from scripts.features import load_data, build_preprocessor, ALL_FEATURES, TARGET
+from scripts.features import load_data, build_preprocessor
 
 warnings.filterwarnings("ignore")
 warnings.filterwarnings("ignore", category=UserWarning, module="mlflow")
@@ -271,7 +265,7 @@ def train_and_log(model_name, estimator, params, X_train, X_test, y_train, y_tes
         # Log model and register immediately while run is still active
         mlflow.sklearn.log_model(
             pipeline,
-            artifact_path="model",
+            name="model",
             registered_model_name=None,
         )
         
@@ -280,20 +274,6 @@ def train_and_log(model_name, estimator, params, X_train, X_test, y_train, y_tes
         print(f"  MLflow run_id: {run_id}")
         return run_id, metrics["roc_auc"], pipeline
         
-
-def save_best_model_metadata(model_name: str, run_id: str, roc_auc: float, models_dir: Path):
-    """Write metadata JSON so the API server can load the right model."""
-    meta = {
-        "model_name": model_name,
-        "run_id": run_id,
-        "roc_auc": roc_auc,
-        "intervention_threshold": INTERVENTION_THRESHOLD,
-    }
-    meta_path = models_dir / "best_model_meta.json"
-    meta_path.write_text(json.dumps(meta, indent=2))
-    print(f"\n✅ Best model metadata saved → {meta_path}")
-    return meta_path
-
 
 def main():
     parser = argparse.ArgumentParser(description="Train shopper purchase prediction models")
@@ -307,11 +287,12 @@ def main():
     overrides_path = os.getenv("TRAIN_OVERRIDES_PATH")
     overrides = json.loads(Path(overrides_path).read_text()) if overrides_path else {}
 
+    CLOUD_MODELS = {"LR_baseline", "DT_medium", "XGBoost"}
+
     if is_cloud:
         model_configs = [
-            ("LR_baseline", LogisticRegression(C=1.0, class_weight="balanced", max_iter=1000, solver="lbfgs", random_state=RANDOM_STATE), {"C": 1.0}),
-            ("DT_medium", DecisionTreeClassifier(max_depth=8, min_samples_leaf=10, class_weight="balanced", random_state=RANDOM_STATE), {"max_depth": 8}),
-            ("XGBoost", XGBClassifier(n_estimators=100, learning_rate=0.05, max_depth=4, subsample=0.8, scale_pos_weight=5, eval_metric="auc", random_state=RANDOM_STATE, verbosity=0), {"n_estimators": 100}),
+            c for c in build_model_configs(overrides)
+            if c[0] in CLOUD_MODELS
         ]
     else:
         model_configs = build_model_configs(overrides)

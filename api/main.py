@@ -15,15 +15,10 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Optional
 
 import mlflow
-import joblib
-import numpy as np
-import pandas as pd
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.routing import APIRoute
 from pydantic import BaseModel, Field
 
 import asyncio
@@ -41,6 +36,9 @@ from scripts.features import session_dict_to_dataframe, ALL_FEATURES
 MODELS_DIR = ROOT / "models"
 MODEL_PATH = MODELS_DIR / "best_model.pkl"
 META_PATH = MODELS_DIR / "best_model_meta.json"
+
+MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5050")
+INTERVENTION_THRESHOLD = 0.30  # fallback if meta not loaded
 
 pipeline = None
 model_meta = {}
@@ -162,7 +160,7 @@ async def retrain_status():
         "last_result": training_status["last_result"],
         "model": model_meta.get("model_name"),
         "roc_auc": model_meta.get("roc_auc"),
-        "version": model_meta.get("version"),
+        "version": model_meta.get("run_id"),
     }
 
 # ---------------------------------------------------------------------------
@@ -238,12 +236,6 @@ class BatchResult(BaseModel):
 # Helpers
 # ---------------------------------------------------------------------------
 
-MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5050")
-MLFLOW_TRACKING_TOKEN = os.getenv("MLFLOW_TRACKING_TOKEN", "")
-MODEL_ALIAS = os.getenv("MODEL_ALIAS", "champion")
-MODEL_REGISTRY_NAME = "shopper_best_model"
-INTERVENTION_THRESHOLD = 0.30  # fallback if meta not loaded
-
 def _predict_session(session: SessionFeatures) -> PredictionResult:
     if pipeline is None:
         raise HTTPException(status_code=503, detail="Model not loaded")
@@ -286,7 +278,7 @@ def _predict_session(session: SessionFeatures) -> PredictionResult:
 # Routes
 # ---------------------------------------------------------------------------
 
-@app.get("/", tags=["Health"])
+@app.api_route("/", methods=["GET", "HEAD"], tags=["Health"])
 async def root():
     return {
         "status": "ok",
@@ -335,27 +327,3 @@ async def predict_batch(batch: BatchRequest):
         intervention_count=intervention_count,
         intervention_rate=round(intervention_count / len(results), 4),
     )
-
-@app.get("/retrain-debug", tags=["Model"])
-async def retrain_debug():
-    """Run training synchronously and return full output."""
-    import subprocess, os
-    env = os.environ.copy()
-    result = subprocess.run(
-        ["python", "scripts/train.py"],
-        capture_output=True, text=True, env=env
-    )
-    return {
-        "returncode": result.returncode,
-        "stdout": result.stdout[-3000:],
-        "stderr": result.stderr[-3000:],
-    }
-
-@app.api_route("/", methods=["GET", "HEAD"], tags=["Health"])
-async def root():
-    return {
-        "status": "ok",
-        "model": model_meta.get("model_name", "not loaded"),
-        "roc_auc": model_meta.get("roc_auc"),
-        "intervention_threshold": model_meta.get("intervention_threshold", INTERVENTION_THRESHOLD),
-    }
