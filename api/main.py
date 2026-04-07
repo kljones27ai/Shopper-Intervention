@@ -344,3 +344,19 @@ async def predict_batch(batch: BatchRequest):
         intervention_count=intervention_count,
         intervention_rate=round(intervention_count / len(results), 4),
     )
+
+@app.get("/retrain-debug", tags=["Model"])
+async def retrain_debug():
+    """Run training synchronously and return full output."""
+    import subprocess, os
+    env = os.environ.copy()
+    result = subprocess.run(
+        ["python", "scripts/train.py"],
+        capture_output=True, text=True, env=env
+    )
+    return {
+        "returncode": result.returncode,
+        "stdout": result.stdout[-3000:],
+        "stderr": result.stderr[-3000:],
+    }
+    
