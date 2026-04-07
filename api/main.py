@@ -112,9 +112,9 @@ async def startup_event():
 
 
 async def run_training(overrides=None):
-    import tempfile, json
+    import tempfile
     env = os.environ.copy()
-    
+
     if overrides:
         tmp = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
         json.dump(overrides, tmp)
@@ -129,10 +129,8 @@ async def run_training(overrides=None):
             capture_output=True, text=True, env=env
         )
     )
-    if result.returncode == 0:
-        load_model()
-    else:
-        print(f"❌ Training failed:\n{result.stderr}")
+    return result  # ← just return, let the caller decide what to do
+    
 
 # Training state — lets Streamlit poll status
 training_status = {"running": False, "last_result": None}
@@ -144,14 +142,18 @@ class RetrainRequest(BaseModel):
 async def retrain(request: RetrainRequest = RetrainRequest()):
     if training_status["running"]:
         return {"status": "already_running"}
-    
+
     training_status["running"] = True
     training_status["last_result"] = None
 
     async def _run():
         try:
-            await run_training(request.overrides)
-            training_status["last_result"] = "success"
+            result = await run_training(request.overrides)
+            if result.returncode == 0:
+                training_status["last_result"] = "success"
+                load_model()
+            else:
+                training_status["last_result"] = f"error: {result.stderr[-500:]}"
         except Exception as e:
             training_status["last_result"] = f"error: {e}"
         finally:
