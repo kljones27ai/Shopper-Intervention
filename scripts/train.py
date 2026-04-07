@@ -62,63 +62,121 @@ CV_FOLDS = 5
 INTERVENTION_THRESHOLD = 0.30
 
 
-def build_model_configs():
+def build_model_configs(overrides=None):
+    overrides = overrides or {}
+
+    def get(model_name, param, default):
+        return overrides.get(model_name, {}).get(param, default)
+
     return [
         (
             "LR_baseline",
-            LogisticRegression(C=1.0, class_weight="balanced", max_iter=1000, solver="lbfgs", random_state=RANDOM_STATE),
-            {"C": 1.0, "solver": "lbfgs"},
+            LogisticRegression(
+                C=get("LR_baseline", "C", 1.0),
+                solver=get("LR_baseline", "solver", "lbfgs"),
+                class_weight="balanced", max_iter=1000, random_state=RANDOM_STATE
+            ),
+            {"C": get("LR_baseline", "C", 1.0), "solver": get("LR_baseline", "solver", "lbfgs")},
         ),
         (
             "LR_high_regularization",
-            LogisticRegression(C=0.01, class_weight="balanced", max_iter=1000, solver="lbfgs", random_state=RANDOM_STATE),
-            {"C": 0.01, "solver": "lbfgs"},
+            LogisticRegression(
+                C=get("LR_high_regularization", "C", 0.01),
+                solver=get("LR_high_regularization", "solver", "lbfgs"),
+                class_weight="balanced", max_iter=1000, random_state=RANDOM_STATE
+            ),
+            {"C": get("LR_high_regularization", "C", 0.01), "solver": get("LR_high_regularization", "solver", "lbfgs")},
         ),
         (
             "LR_L1",
-            LogisticRegression(C=1.0, penalty="l1", class_weight="balanced", max_iter=1000, solver="saga", random_state=RANDOM_STATE),
-            {"C": 1.0, "penalty": "l1", "solver": "saga"},
+            LogisticRegression(
+                C=get("LR_L1", "C", 1.0),
+                penalty=get("LR_L1", "penalty", "l1"),
+                solver=get("LR_L1", "solver", "saga"),
+                class_weight="balanced", max_iter=1000, random_state=RANDOM_STATE
+            ),
+            {"C": get("LR_L1", "C", 1.0), "penalty": get("LR_L1", "penalty", "l1"), "solver": get("LR_L1", "solver", "saga")},
         ),
         (
             "DT_shallow",
-            DecisionTreeClassifier(max_depth=4, class_weight="balanced", random_state=RANDOM_STATE),
-            {"max_depth": 4},
+            DecisionTreeClassifier(
+                max_depth=get("DT_shallow", "max_depth", 4),
+                class_weight="balanced", random_state=RANDOM_STATE
+            ),
+            {"max_depth": get("DT_shallow", "max_depth", 4)},
         ),
         (
             "DT_medium",
-            DecisionTreeClassifier(max_depth=8, min_samples_leaf=10, class_weight="balanced", random_state=RANDOM_STATE),
-            {"max_depth": 8, "min_samples_leaf": 10},
+            DecisionTreeClassifier(
+                max_depth=get("DT_medium", "max_depth", 8),
+                min_samples_leaf=get("DT_medium", "min_samples_leaf", 10),
+                class_weight="balanced", random_state=RANDOM_STATE
+            ),
+            {"max_depth": get("DT_medium", "max_depth", 8), "min_samples_leaf": get("DT_medium", "min_samples_leaf", 10)},
         ),
         (
             "DT_entropy",
-            DecisionTreeClassifier(max_depth=8, criterion="entropy", class_weight="balanced", random_state=RANDOM_STATE),
-            {"max_depth": 8, "criterion": "entropy"},
+            DecisionTreeClassifier(
+                max_depth=get("DT_entropy", "max_depth", 8),
+                criterion=get("DT_entropy", "criterion", "entropy"),
+                class_weight="balanced", random_state=RANDOM_STATE
+            ),
+            {"max_depth": get("DT_entropy", "max_depth", 8), "criterion": get("DT_entropy", "criterion", "entropy")},
         ),
         (
             "RF_baseline",
-            RandomForestClassifier(n_estimators=200, max_depth=12, class_weight="balanced", n_jobs=-1, random_state=RANDOM_STATE),
-            {"n_estimators": 200, "max_depth": 12, "max_features": "sqrt"},
+            RandomForestClassifier(
+                n_estimators=get("RF_baseline", "n_estimators", 200),
+                max_depth=get("RF_baseline", "max_depth", 12),
+                class_weight="balanced", n_jobs=-1, random_state=RANDOM_STATE
+            ),
+            {"n_estimators": get("RF_baseline", "n_estimators", 200), "max_depth": get("RF_baseline", "max_depth", 12), "max_features": "sqrt"},
         ),
         (
             "RF_log2_features",
-            RandomForestClassifier(n_estimators=200, max_depth=12, max_features="log2", class_weight="balanced", n_jobs=-1, random_state=RANDOM_STATE),
-            {"n_estimators": 200, "max_depth": 12, "max_features": "log2"},
+            RandomForestClassifier(
+                n_estimators=get("RF_log2_features", "n_estimators", 200),
+                max_depth=get("RF_log2_features", "max_depth", 12),
+                max_features=get("RF_log2_features", "max_features", "log2"),
+                class_weight="balanced", n_jobs=-1, random_state=RANDOM_STATE
+            ),
+            {"n_estimators": get("RF_log2_features", "n_estimators", 200), "max_depth": get("RF_log2_features", "max_depth", 12), "max_features": get("RF_log2_features", "max_features", "log2")},
         ),
         (
             "RF_deep",
-            RandomForestClassifier(n_estimators=300, max_depth=None, max_features="sqrt", class_weight="balanced", n_jobs=-1, random_state=RANDOM_STATE),
-            {"n_estimators": 300, "max_depth": "None", "max_features": "sqrt"},
+            RandomForestClassifier(
+                n_estimators=get("RF_deep", "n_estimators", 300),
+                max_depth=get("RF_deep", "max_depth", None),
+                max_features=get("RF_deep", "max_features", "sqrt"),
+                class_weight="balanced", n_jobs=-1, random_state=RANDOM_STATE
+            ),
+            {"n_estimators": get("RF_deep", "n_estimators", 300), "max_depth": get("RF_deep", "max_depth", "None"), "max_features": get("RF_deep", "max_features", "sqrt")},
         ),
         (
-    		"GradientBoosting",
-    		GradientBoostingClassifier(n_estimators=200, learning_rate=0.05, max_depth=4, min_samples_leaf=10, subsample=0.8, random_state=RANDOM_STATE),
-		    {"n_estimators": 200, "learning_rate": 0.05, "max_depth": 4, "subsample": 0.8},
-		),
-		(
- 		   "XGBoost",
-		    XGBClassifier(n_estimators=200, learning_rate=0.05, max_depth=4, subsample=0.8, colsample_bytree=0.8, scale_pos_weight=5, eval_metric="auc", random_state=RANDOM_STATE, verbosity=0),
-    		{"n_estimators": 200, "learning_rate": 0.05, "max_depth": 4, "subsample": 0.8, "colsample_bytree": 0.8, "scale_pos_weight": 5},
-		),
+            "GradientBoosting",
+            GradientBoostingClassifier(
+                n_estimators=get("GradientBoosting", "n_estimators", 200),
+                learning_rate=get("GradientBoosting", "learning_rate", 0.05),
+                max_depth=get("GradientBoosting", "max_depth", 4),
+                min_samples_leaf=get("GradientBoosting", "min_samples_leaf", 10),
+                subsample=get("GradientBoosting", "subsample", 0.8),
+                random_state=RANDOM_STATE
+            ),
+            {"n_estimators": get("GradientBoosting", "n_estimators", 200), "learning_rate": get("GradientBoosting", "learning_rate", 0.05), "max_depth": get("GradientBoosting", "max_depth", 4), "subsample": get("GradientBoosting", "subsample", 0.8)},
+        ),
+        (
+            "XGBoost",
+            XGBClassifier(
+                n_estimators=get("XGBoost", "n_estimators", 200),
+                learning_rate=get("XGBoost", "learning_rate", 0.05),
+                max_depth=get("XGBoost", "max_depth", 4),
+                subsample=get("XGBoost", "subsample", 0.8),
+                colsample_bytree=get("XGBoost", "colsample_bytree", 0.8),
+                scale_pos_weight=get("XGBoost", "scale_pos_weight", 5),
+                eval_metric="auc", random_state=RANDOM_STATE, verbosity=0
+            ),
+            {"n_estimators": get("XGBoost", "n_estimators", 200), "learning_rate": get("XGBoost", "learning_rate", 0.05), "max_depth": get("XGBoost", "max_depth", 4), "subsample": get("XGBoost", "subsample", 0.8), "colsample_bytree": get("XGBoost", "colsample_bytree", 0.8), "scale_pos_weight": get("XGBoost", "scale_pos_weight", 5)},
+        ),
     ]
 
 
@@ -302,6 +360,10 @@ def main():
     second_best = sorted(results, key=lambda r: -r[2])[1]
     mv2 = mlflow.register_model(f"runs:/{second_best[1]}/model", MODEL_REGISTRY_NAME)
     client.set_registered_model_alias(MODEL_REGISTRY_NAME, "challenger", mv2.version)
+
+    overrides_path = os.getenv("TRAIN_OVERRIDES_PATH")
+    overrides = json.loads(Path(overrides_path).read_text()) if overrides_path else {}
+    configs = build_model_configs(overrides)
 
     # --- Leaderboard ---
     print("\n📊 Model Leaderboard (Test ROC-AUC):")

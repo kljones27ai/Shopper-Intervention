@@ -111,20 +111,25 @@ async def startup_event():
         traceback.print_exc()
 
 
-async def run_training():
-    """Run train.py as a subprocess and reload the model when done."""
-    print("🔄 Starting training run...")
+async def run_training(overrides=None):
+    import tempfile, json
+    env = os.environ.copy()
+    
+    if overrides:
+        tmp = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
+        json.dump(overrides, tmp)
+        tmp.close()
+        env["TRAIN_OVERRIDES_PATH"] = tmp.name
+
     loop = asyncio.get_event_loop()
     result = await loop.run_in_executor(
         None,
         lambda: subprocess.run(
             ["python", "scripts/train.py"],
-            capture_output=True,
-            text=True
+            capture_output=True, text=True, env=env
         )
     )
     if result.returncode == 0:
-        print("✅ Training complete — reloading model...")
         load_model()
     else:
         print(f"❌ Training failed:\n{result.stderr}")
@@ -132,9 +137,11 @@ async def run_training():
 # Training state — lets Streamlit poll status
 training_status = {"running": False, "last_result": None}
 
+class RetrainRequest(BaseModel):
+    overrides: dict = {}
+
 @app.post("/retrain", tags=["Model"])
-async def retrain():
-    """Kick off a background training run. Returns immediately."""
+async def retrain(request: RetrainRequest = RetrainRequest()):
     if training_status["running"]:
         return {"status": "already_running"}
     
@@ -143,7 +150,7 @@ async def retrain():
 
     async def _run():
         try:
-            await run_training()
+            await run_training(request.overrides)
             training_status["last_result"] = "success"
         except Exception as e:
             training_status["last_result"] = f"error: {e}"

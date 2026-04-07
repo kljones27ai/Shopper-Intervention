@@ -476,11 +476,11 @@ with tab4:
 # ===========================================================================
 
 with tab5:
-    st.header("Retrain Model")
-    st.caption("Kick off a new training run against the latest data and reload the champion model.")
+    st.header("🔁 Retrain Model")
+    st.caption("Adjust hyperparameters and kick off a new training run.")
 
+    # Current model info
     col1, col2 = st.columns([1, 2])
-
     with col1:
         try:
             info = requests.get(f"{API_URL}/model-info").json()
@@ -488,38 +488,71 @@ with tab5:
             st.metric("ROC-AUC", f"{info.get('roc_auc', 0):.4f}")
             st.metric("Version", info.get("version", "—"))
         except Exception:
-            st.metric("Current Model", "—")
-            st.metric("ROC-AUC", "—")
-            st.metric("Version", "—")
             st.caption("⚠️ Could not reach API")
 
     with col2:
-        st.warning("⚠️ Retraining will replace the current champion model if the new run scores higher.")
-        
-        if st.button("🚀 Start Retraining", type="primary"):
-            response = requests.post(f"{API_URL}/retrain")
-            result = response.json()
+        st.warning("⚠️ Retraining replaces the champion model if the new run scores higher.")
 
-            if result["status"] == "already_running":
-                st.info("⏳ A training run is already in progress.")
+    st.divider()
+    st.subheader("Hyperparameter Overrides")
+    st.caption("Adjust key parameters per model. Leave as-is to use defaults.")
+
+    overrides = {}
+
+    with st.expander("Logistic Regression", expanded=False):
+        lr_c = st.slider("C (regularization)", 0.001, 10.0, 1.0, step=0.01, key="lr_c")
+        lr_solver = st.selectbox("Solver", ["lbfgs", "saga"], key="lr_solver")
+        overrides["LR_baseline"] = {"C": lr_c, "solver": lr_solver}
+        overrides["LR_high_regularization"] = {"C": lr_c * 0.01, "solver": lr_solver}
+
+    with st.expander("Decision Tree", expanded=False):
+        dt_depth = st.slider("Max Depth", 2, 20, 8, key="dt_depth")
+        dt_criterion = st.selectbox("Criterion", ["gini", "entropy"], key="dt_criterion")
+        dt_min_samples = st.slider("Min Samples Leaf", 1, 50, 10, key="dt_min")
+        overrides["DT_shallow"] = {"max_depth": max(2, dt_depth - 4)}
+        overrides["DT_medium"] = {"max_depth": dt_depth, "min_samples_leaf": dt_min_samples}
+        overrides["DT_entropy"] = {"max_depth": dt_depth, "criterion": dt_criterion}
+
+    with st.expander("Random Forest", expanded=False):
+        rf_estimators = st.slider("N Estimators", 50, 500, 200, step=50, key="rf_n")
+        rf_depth = st.slider("Max Depth", 4, 30, 12, key="rf_depth")
+        rf_features = st.selectbox("Max Features", ["sqrt", "log2"], key="rf_features")
+        overrides["RF_baseline"] = {"n_estimators": rf_estimators, "max_depth": rf_depth}
+        overrides["RF_log2_features"] = {"n_estimators": rf_estimators, "max_depth": rf_depth, "max_features": "log2"}
+        overrides["RF_deep"] = {"n_estimators": rf_estimators + 100, "max_depth": None}
+
+    with st.expander("Gradient Boosting & XGBoost", expanded=False):
+        gb_estimators = st.slider("N Estimators", 50, 500, 200, step=50, key="gb_n")
+        gb_lr = st.slider("Learning Rate", 0.01, 0.3, 0.05, step=0.01, key="gb_lr")
+        gb_depth = st.slider("Max Depth", 2, 10, 4, key="gb_depth")
+        gb_subsample = st.slider("Subsample", 0.5, 1.0, 0.8, step=0.05, key="gb_sub")
+        xgb_scale = st.slider("XGB Scale Pos Weight", 1, 20, 5, key="xgb_scale")
+        overrides["GradientBoosting"] = {"n_estimators": gb_estimators, "learning_rate": gb_lr, "max_depth": gb_depth, "subsample": gb_subsample}
+        overrides["XGBoost"] = {"n_estimators": gb_estimators, "learning_rate": gb_lr, "max_depth": gb_depth, "subsample": gb_subsample, "scale_pos_weight": xgb_scale}
+
+    st.divider()
+    if st.button("🚀 Start Retraining", type="primary"):
+        response = requests.post(f"{API_URL}/retrain", json={"overrides": overrides})
+        result = response.json()
+
+        if result["status"] == "already_running":
+            st.info("⏳ A training run is already in progress.")
+        else:
+            st.info("Training started — polling every 5 seconds...")
+            with st.spinner("Training in progress..."):
+                while True:
+                    time.sleep(5)
+                    status = requests.get(f"{API_URL}/retrain-status").json()
+                    if not status["running"]:
+                        break
+
+            if status["last_result"] == "success":
+                st.success(
+                    f"✅ Retraining complete!\n\n"
+                    f"**Model:** {status['model']}  \n"
+                    f"**ROC-AUC:** {status['roc_auc']:.4f}  \n"
+                    f"**Version:** {status['version']}"
+                )
+                st.balloons()
             else:
-                st.info("Training started — checking for completion every 5 seconds...")
-                
-                with st.spinner("Training in progress..."):
-                    while True:
-                        time.sleep(5)
-                        status = requests.get(f"{API_URL}/retrain-status").json()
-                        if not status["running"]:
-                            break
-
-                if status["last_result"] == "success":
-                    st.success(
-                        f"✅ Retraining complete!\n\n"
-                        f"**Model:** {status['model']}  \n"
-                        f"**ROC-AUC:** {status['roc_auc']:.4f}  \n"
-                        f"**Version:** {status['version']}"
-                    )
-                    st.balloons()
-                else:
-                    st.error(f"❌ Training failed: {status['last_result']}")
-                    
+                st.error(f"❌ Training failed: {status['last_result']}")
