@@ -43,7 +43,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
-st.sidebar.caption(f"API: {API_URL}")
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -109,7 +109,8 @@ with st.sidebar:
         st.caption("Run: `uvicorn api.main:app --reload --port 8000`")
 
     st.divider()
-    st.markdown("**Navigation**")
+    st.markdown("**Debug**")
+    st.sidebar.caption(f"API: {API_URL}")
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📊 Dataset Explorer",
@@ -438,16 +439,23 @@ with tab3:
 with tab4:
     st.header("Model Performance")
 
-    if META_PATH.exists():
-        meta = json.loads(META_PATH.read_text())
-        st.success(f"Best model: **{meta['model_name']}**")
+    try:
+        info = requests.get(f"{API_URL}/model-info", timeout=5).json()
+        st.success(f"Best model: **{info.get('model_name', '—')}**")
         col1, col2, col3 = st.columns(3)
-        col1.metric("ROC-AUC (Test)", f"{meta['roc_auc']:.4f}")
-        col2.metric("Model Type", meta["model_name"])
-        col3.metric("Intervention Threshold", f"{meta['intervention_threshold']*100:.0f}%")
-        st.caption(f"MLflow run ID: `{meta['run_id']}`")
-    else:
-        st.warning("No model metadata found. Run `python scripts/train.py` first.")
+        col1.metric("ROC-AUC (Test)", f"{info.get('roc_auc', 0):.4f}")
+        col2.metric("Model Type", info.get("model_name", "—"))
+        col3.metric("Intervention Threshold", f"{info.get('intervention_threshold', 0.3)*100:.0f}%")
+        st.caption(f"MLflow run ID: `{info.get('run_id', '—')}`")
+        if info.get("challenger"):
+            st.divider()
+            st.subheader("Challenger Model")
+            ch = info["challenger"]
+            c1, c2 = st.columns(2)
+            c1.metric("Challenger Model", ch.get("model_name", "—"))
+            c2.metric("Challenger ROC-AUC", f"{ch.get('roc_auc', 0):.4f}")
+    except Exception:
+        st.warning("Could not load model info from API.")
 
     st.divider()
     st.subheader("How the Intervention Works")
