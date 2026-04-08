@@ -360,6 +360,10 @@ def main():
     client.set_registered_model_alias(
         MODEL_REGISTRY_NAME, "champion", champion_mv.version
     )
+    meta["champion"]["version"] = champion_mv.version
+    
+    # Rewrite meta with version included
+    meta_path.write_text(json.dumps(meta, indent=2))
     print(f"✅ Champion registered: v{champion_mv.version} ({best_name})")
     
     # Register challenger (if exists)
