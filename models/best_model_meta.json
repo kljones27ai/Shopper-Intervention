@@ -10,7 +10,7 @@
     "run_id": "7522b2ca874a4ff28fd9e9f969e2abc7",
     "roc_auc": 0.9271638311342465,
     "intervention_threshold": 0.3
-  }
+  },
   "threshold_config": {
     "mode": "lower",
     "lower": 0.30,
