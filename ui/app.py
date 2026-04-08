@@ -353,8 +353,8 @@ with tab2:
         admin = c1.number_input("Administrative Pages", min_value=0, value=0)
         admin_dur = c2.number_input("Admin Duration (s)", min_value=0.0, value=0.0)
 
-        info = c1.number_input("Informational Pages", min_value=0, value=0)
-        info_dur = c2.number_input("Info Duration (s)", min_value=0.0, value=0.0)
+        informational = c1.number_input("Informational Pages", min_value=0, value=0)
+        informational_dur = c2.number_input("Info Duration (s)", min_value=0.0, value=0.0)
 
         prod = c1.number_input("Product-Related Pages", min_value=0, value=10)
         prod_dur = c2.number_input("Product Duration (s)", min_value=0.0, value=300.0)
@@ -385,8 +385,8 @@ with tab2:
         payload = {
             "Administrative": int(admin),
             "Administrative_Duration": float(admin_dur),
-            "Informational": int(info),
-            "Informational_Duration": float(info_dur),
+            "Informational": int(informational),
+            "Informational_Duration": float(informational_dur),
             "ProductRelated": int(prod),
             "ProductRelated_Duration": float(prod_dur),
             "BounceRates": float(bounce),
@@ -406,8 +406,6 @@ with tab2:
         start = time.time()
         result, err = call_predict(payload)
         elapsed = time.time() - start
-
-        result, err = call_predict(payload)
 
         if err:
             st.error(err)
