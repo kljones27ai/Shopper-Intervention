@@ -48,11 +48,17 @@ st.set_page_config(
 # Helpers
 # ---------------------------------------------------------------------------
 
+DATA_URL = "https://dagshub.com/smbrownai/shopper_intervention/raw/main/data/online_shoppers_intention.csv"
+
 @st.cache_data
 def load_data():
-    if not DATA_PATH.exists():
-        return None
-    df = pd.read_csv(DATA_PATH)
+    if DATA_PATH.exists():
+        df = pd.read_csv(DATA_PATH)
+    else:
+        try:
+            df = pd.read_csv(DATA_URL)
+        except Exception:
+            return None
     df["Weekend"] = df["Weekend"].astype(str)
     df["Purchased"] = df["Revenue"].map({True: "Purchase", False: "No Purchase"})
     return df
