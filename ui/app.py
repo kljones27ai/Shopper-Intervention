@@ -162,7 +162,7 @@ with st.sidebar:
             st.caption(f"Threshold: **{threshold_data.get('lower', 0.30):.0%} – {threshold_data.get('upper', 0.70):.0%}** (range)")
         else:
             st.caption(f"Threshold: **{threshold_data.get('lower', 0.30):.0%}** (below)")
-        else:
+    else:
         st.error("API offline ❌")
         st.caption("Run: `uvicorn api.main:app --reload --port 8000`")
 
