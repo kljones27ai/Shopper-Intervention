@@ -32,6 +32,7 @@ META_PATH = ROOT / "models" / "best_model_meta.json"
 API_URL = os.getenv("API_URL", "https://shopper-intervention.onrender.com")
 # Safe default — overwritten by API if available
 threshold_data = {"mode": "lower", "lower": 0.30, "upper": 0.70}
+champion_name = info.get("model_name", "Champion")
 
 # ---------------------------------------------------------------------------
 # Page config
