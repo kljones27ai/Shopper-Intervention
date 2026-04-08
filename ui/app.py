@@ -407,9 +407,6 @@ with tab2:
         result, err = call_predict(payload)
         elapsed = time.time() - start
 
-        # then display it:
-        st.metric("Inference Time", f"{elapsed*1000:.1f} ms")
-        
         result, err = call_predict(payload)
 
         if err:
