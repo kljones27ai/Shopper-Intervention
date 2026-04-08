@@ -592,7 +592,7 @@ with tab5:
         overrides["RF_log2_features"] = {"n_estimators": rf_estimators, "max_depth": rf_depth, "max_features": "log2"}
         overrides["RF_deep"] = {"n_estimators": rf_estimators + 100, "max_depth": None}
 
-    with st.expander("Gradient Boosting & XGBoost", expanded=False):
+    with st.expander("XGBoost", expanded=False):
         gb_estimators = st.slider("N Estimators", 50, 500, 200, step=50, key="gb_n")
         gb_lr = st.slider("Learning Rate", 0.01, 0.3, 0.05, step=0.01, key="gb_lr")
         gb_depth = st.slider("Max Depth", 2, 10, 4, key="gb_depth")
