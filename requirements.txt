@@ -3,7 +3,7 @@ dagshub==0.6.9
 
 # UI
 #streamlit==1.37.1
-#plotly==6.6.0
+plotly==6.6.0
 requests==2.33.1
 
 # API
