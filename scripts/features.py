@@ -55,14 +55,18 @@ def load_data(path: str) -> tuple[pd.DataFrame, pd.Series]:
     return X, y
 
 
-def build_preprocessor() -> ColumnTransformer:
-    """
-    Returns a ColumnTransformer that:
-      - Imputes + scales numeric features
-      - Imputes + one-hot-encodes categorical features
-    """
+def build_preprocessor(
+    numeric_imputer_strategy: str = "median",
+    excluded_features: list = None
+) -> ColumnTransformer:
+    
+    excluded_features = excluded_features or []
+    
+    active_numeric = [f for f in NUMERIC_FEATURES if f not in excluded_features]
+    active_categorical = [f for f in CATEGORICAL_FEATURES if f not in excluded_features]
+
     numeric_pipeline = Pipeline([
-        ("imputer", SimpleImputer(strategy="median")),
+        ("imputer", SimpleImputer(strategy=numeric_imputer_strategy)),
         ("scaler", StandardScaler()),
     ])
 
@@ -73,8 +77,8 @@ def build_preprocessor() -> ColumnTransformer:
 
     preprocessor = ColumnTransformer(
         transformers=[
-            ("num", numeric_pipeline, NUMERIC_FEATURES),
-            ("cat", categorical_pipeline, CATEGORICAL_FEATURES),
+            ("num", numeric_pipeline, active_numeric),
+            ("cat", categorical_pipeline, active_categorical),
         ],
         remainder="drop",
     )

@@ -3,10 +3,10 @@ train.py — Train and evaluate three classifiers on the online shoppers intenti
 Logs every run to MLflow, saves the best model for the FastAPI server.
 
 Models:
-  1. Logistic Regression (x3)
-  2. Decision Tree (x3)
-  3. Random Forest (x3)
-  4. Gradient Boosting and XGBoost
+  1. Logistic Regression
+  2. Decision Tree
+  3. Random Forest
+  4. XGBoost
 
 Usage:
     python scripts/train.py [--data data/online_shoppers_intention.csv]
@@ -234,6 +234,8 @@ def train_and_log(model_name, estimator, params, X_train, X_test, y_train, y_tes
             "cv_folds": CV_FOLDS,
             "intervention_threshold": INTERVENTION_THRESHOLD,
             "class_weight": "balanced",
+            "numeric_imputer_strategy": numeric_imputer_strategy,
+            "excluded_features": str(excluded_features) or "none",
         })
         mlflow.log_metrics(metrics)
         mlflow.log_metric("cv_roc_auc_mean", cv_scores.mean())
@@ -318,7 +320,12 @@ def main():
     mlflow.set_experiment(EXPERIMENT_NAME)
     print(f"\n🔬 MLflow experiment: '{EXPERIMENT_NAME}'")
 
-    preprocessor = build_preprocessor()
+    numeric_imputer_strategy = overrides.get("_preprocessor", {}).get("numeric_imputer_strategy", "median")
+    excluded_features = overrides.get("_preprocessor", {}).get("excluded_features", [])
+    preprocessor = build_preprocessor(
+        numeric_imputer_strategy=numeric_imputer_strategy,
+        excluded_features=excluded_features
+    )
 
     results = []
     for model_name, estimator, params in model_configs:

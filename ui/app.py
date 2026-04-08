@@ -654,6 +654,40 @@ with tab5:
         st.warning("⚠️ Retraining replaces the champion model if the new run scores higher. Note: Each training run updates two sources — a local metadata file (best_model_meta.json) that powers this dashboard, and the MLflow Model Registry on DagHub where champion and challenger versions are tagged with aliases for lineage tracking. These are kept in sync automatically by the training pipeline, but manual changes in the MLflow Registry will not be reflected here until the next training run.")
 
     st.divider()
+    st.subheader("Preprocessing Options")
+    
+    imputer_strategy = st.radio(
+        "Numeric Imputation Strategy",
+        ["median", "mean"],
+        horizontal=True,
+        help="Median is more robust to outliers. Mean is sensitive to skewed features like PageValues."
+    )
+    
+    st.markdown("**Exclude Feature Groups**")
+    st.caption("Remove entire feature groups from training to evaluate their impact on model performance.")
+    
+    col_a, col_b = st.columns(2)
+    exclude_technical = col_a.checkbox(
+        "Exclude Technical Features",
+        help="OperatingSystems, Browser, Region, TrafficType"
+    )
+    exclude_engagement = col_b.checkbox(
+        "Exclude Engagement Rates",
+        help="BounceRates, ExitRates, PageValues"
+    )
+    
+    excluded_features = []
+    if exclude_technical:
+        excluded_features += ["OperatingSystems", "Browser", "Region", "TrafficType"]
+    if exclude_engagement:
+        excluded_features += ["BounceRates", "ExitRates", "PageValues"]
+    
+    overrides["_preprocessor"] = {
+        "numeric_imputer_strategy": imputer_strategy,
+        "excluded_features": excluded_features,
+    }
+
+    st.divider()
     st.subheader("Hyperparameter Overrides")
     st.caption("Adjust key parameters per model. Leave as-is to use defaults.")
 
