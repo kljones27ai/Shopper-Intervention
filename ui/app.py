@@ -481,11 +481,11 @@ with tab3:
         champion_name = "Champion"
         challenger_name = "Challenger"
 
-    model_choice = st.radio(
+    model_choice_batch = st.radio(
         "Model",
         [f"Champion ({champion_name})", f"Challenger ({challenger_name})"] if has_challenger else [f"Champion ({champion_name})"],
         horizontal=True,
-        key="model_choice_single",
+        key="model_choice_batch",
     )
     use_challenger_batch = "Challenger" in model_choice_batch
 
