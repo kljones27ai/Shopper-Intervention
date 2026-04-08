@@ -328,14 +328,16 @@ with tab2:
 
     # Check if challenger is available
     has_challenger = bool(model_meta.get("challenger")) if "model_meta" in dir() else False
-    try:
-        info = requests.get(f"{API_URL}/model-info", timeout=3).json()
-        has_challenger = bool(info.get("challenger"))
-        challenger_name = info.get("challenger", {}).get("model_name", "Challenger")
-    except Exception:
-        has_challenger = False
-        challenger_name = "Challenger"
-
+	try:
+		info = requests.get(f"{API_URL}/model-info", timeout=3).json()
+		has_challenger = bool(info.get("challenger"))
+		champion_name = info.get("model_name", "Champion")
+		challenger_name = info.get("challenger", {}).get("model_name", "Challenger")
+	except Exception:
+		has_challenger = False
+		champion_name = "Champion"
+		challenger_name = "Challenger"
+    
     model_choice = st.radio(
         "Model",
         [f"Champion ({champion_name})", f"Challenger ({challenger_name})"] if has_challenger else [f"Champion ({champion_name})"],
@@ -472,9 +474,11 @@ with tab3:
     try:
         info = requests.get(f"{API_URL}/model-info", timeout=3).json()
         has_challenger = bool(info.get("challenger"))
+        champion_name = info.get("model_name", "Champion")
         challenger_name = info.get("challenger", {}).get("model_name", "Challenger")
     except Exception:
         has_challenger = False
+        champion_name = "Champion"
         challenger_name = "Challenger"
 
     model_choice = st.radio(
