@@ -1,19 +1,15 @@
 {
   "champion": {
     "model_name": "XGBoost",
-    "run_id": "3fe56d9dd8a84f26838b8ccae8be59b9",
+    "run_id": "196e1e08fec944cdbc3f03af3dc09b8e",
     "roc_auc": 0.9304825597170162,
-    "intervention_threshold": 0.3
+    "intervention_threshold": 0.3,
+    "version": "21"
   },
   "challenger": {
-    "model_name": "GradientBoosting",
-    "run_id": "7522b2ca874a4ff28fd9e9f969e2abc7",
-    "roc_auc": 0.9271638311342465,
+    "model_name": "RF_baseline",
+    "run_id": "c785a88efff94d56ae036e644060bb85",
+    "roc_auc": 0.9125247460079791,
     "intervention_threshold": 0.3
-  },
-  "threshold_config": {
-    "mode": "lower",
-    "lower": 0.30,
-    "upper": 0.70
   }
 }
