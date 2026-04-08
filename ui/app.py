@@ -336,11 +336,11 @@ with tab2:
         has_challenger = False
         challenger_name = "Challenger"
 
-	model_choice = st.radio(
-		"Model",
-		[f"Champion ({champion_name})", f"Challenger ({challenger_name})"] if has_challenger else [f"Champion ({champion_name})"],
-		horizontal=True,
-		key="model_choice_single",
+    model_choice = st.radio(
+        "Model",
+        [f"Champion ({champion_name})", f"Challenger ({challenger_name})"] if has_challenger else [f"Champion ({champion_name})"],
+        horizontal=True,
+        key="model_choice_single",
         help="Select which model to score with. Challenger is only available after a training run produces one."
     )
     use_challenger = "Challenger" in model_choice
