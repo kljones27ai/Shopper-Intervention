@@ -281,7 +281,8 @@ def _predict_session(session: SessionFeatures, use_challenger: bool = False) -> 
     df = session_dict_to_dataframe(session.model_dump())
     start = time.perf_counter()
     prob_purchase = float(active_pipeline.predict_proba(df)[0, 1])
-    elapsed_ms = (time.perf_counter() - start) * 1000    prob_no_purchase = 1.0 - prob_purchase
+    elapsed_ms = (time.perf_counter() - start) * 1000
+    prob_no_purchase = 1.0 - prob_purchase
     prediction = int(pipeline.predict(df)[0])
 
     # Intervention logic — single threshold or range
