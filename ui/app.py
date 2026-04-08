@@ -158,11 +158,11 @@ with st.sidebar:
         st.success(f"API online ✅")
         st.caption(f"Model: **{health_data.get('model', '?')}**")
         st.caption(f"ROC-AUC: **{health_data.get('roc_auc', '?')}**")
-        if threshold_data["mode"] == "range":
-            st.caption(f"Threshold: **{threshold_data['lower']:.0%} – {threshold_data['upper']:.0%}** (range)")
+        if threshold_data.get("mode", "lower") == "range":
+            st.caption(f"Threshold: **{threshold_data.get('lower', 0.30):.0%} – {threshold_data.get('upper', 0.70):.0%}** (range)")
         else:
-            st.caption(f"Threshold: **{threshold_data['lower']:.0%}** (below)")
-    else:
+            st.caption(f"Threshold: **{threshold_data.get('lower', 0.30):.0%}** (below)")
+        else:
         st.error("API offline ❌")
         st.caption("Run: `uvicorn api.main:app --reload --port 8000`")
 
