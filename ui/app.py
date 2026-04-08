@@ -94,10 +94,12 @@ def call_predict_batch(sessions: list[dict]):
 
 with st.sidebar:
     st.title("🛒 Shopper Intervention")
-    st.caption("Predict & intervene before customers leave")
+    st.caption("Predict likely buyers for special promo")
+    st.caption("BANA 7075 Group 2 Winter 2026")
     st.divider()
 
     st.markdown("**Intervention Threshold**")
+    st.caption("The probability cutoff used to flag sessions for outreach. This is a business decision applied to model output, not a model parameter.")
     
     # Load current config from API
     try:
@@ -399,7 +401,7 @@ with tab2:
 
 with tab3:
     st.header("Batch Session Scoring")
-    st.caption("Upload a CSV of sessions to score them all at once and identify intervention candidates.")
+    st.caption("Upload a CSV of sessions to score them all at once and identify intervention candidates. Recommended file size is about 1,500 rows.")
 
     REQUIRED_COLS = [
         "Administrative","Administrative_Duration","Informational","Informational_Duration",
@@ -537,9 +539,9 @@ with tab4:
     raw accuracy, which would be misleading on imbalanced data.
     """)
 
-    st.subheader("Run MLflow UI")
-    st.code("mlflow ui --port 5050", language="bash")
-    st.caption("Then open http://localhost:5050 to compare all experiment runs side by side.")
+    #st.subheader("Run MLflow UI")
+    #st.code("mlflow ui --port 5050", language="bash")
+    #st.caption("Then open http://localhost:5050 to compare all experiment runs side by side.")
 
 
 # ===========================================================================
@@ -562,7 +564,7 @@ with tab5:
             st.caption("⚠️ Could not reach API")
 
     with col2:
-        st.warning("⚠️ Retraining replaces the champion model if the new run scores higher.")
+        st.warning("⚠️ Retraining replaces the champion model if the new run scores higher. Note: Each training run updates two sources — a local metadata file (best_model_meta.json) that powers this dashboard, and the MLflow Model Registry on DagHub where champion and challenger versions are tagged with aliases for lineage tracking. These are kept in sync automatically by the training pipeline, but manual changes in the MLflow Registry will not be reflected here until the next training run.")
 
     st.divider()
     st.subheader("Hyperparameter Overrides")
