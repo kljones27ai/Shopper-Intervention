@@ -93,6 +93,12 @@ def call_predict_batch(sessions: list[dict]):
 # ---------------------------------------------------------------------------
 
 with st.sidebar:
+    # Fetch threshold config once for use throughout the app
+    try:
+        threshold_data = requests.get(f"{API_URL}/threshold", timeout=3).json()
+    except Exception:
+        threshold_data = {"mode": "lower", "lower": 0.30, "upper": 0.70}
+
     st.title("🛒 Shopper Intervention")
     st.caption("Predict & intervene before customers leave")
     st.divider()
@@ -152,8 +158,10 @@ with st.sidebar:
         st.success(f"API online ✅")
         st.caption(f"Model: **{health_data.get('model', '?')}**")
         st.caption(f"ROC-AUC: **{health_data.get('roc_auc', '?')}**")
-        threshold = health_data.get("intervention_threshold", 0.30)
-        st.caption(f"Threshold: **{threshold}**")
+        if threshold_data["mode"] == "range":
+            st.caption(f"Threshold: **{threshold_data['lower']:.0%} – {threshold_data['upper']:.0%}** (range)")
+        else:
+            st.caption(f"Threshold: **{threshold_data['lower']:.0%}** (below)")
     else:
         st.error("API offline ❌")
         st.caption("Run: `uvicorn api.main:app --reload --port 8000`")
@@ -366,13 +374,13 @@ with tab2:
                         "axis": {"range": [0, 100]},
                         "bar": {"color": "#2ecc71" if not intervene else "#e74c3c"},
                         "steps": [
-                            {"range": [0, result["intervention_threshold"] * 100], "color": "#fadbd8"},
-                            {"range": [result["intervention_threshold"] * 100, 100], "color": "#d5f5e3"},
+                            {"range": [0, threshold_data["lower"] * 100], "color": "#fadbd8"},
+                            {"range": [threshold_data["lower"] * 100, 100], "color": "#d5f5e3"},
                         ],
                         "threshold": {
                             "line": {"color": "orange", "width": 4},
                             "thickness": 0.75,
-                            "value": result["intervention_threshold"] * 100,
+                            "value": threshold_data["lower"] * 100,
                         },
                     },
                     number={"suffix": "%"},
@@ -491,7 +499,10 @@ with tab4:
         col1, col2, col3 = st.columns(3)
         col1.metric("ROC-AUC (Test)", f"{info.get('roc_auc', 0):.4f}")
         col2.metric("Model Type", info.get("model_name", "—"))
-        col3.metric("Intervention Threshold", f"{info.get('intervention_threshold', 0.3)*100:.0f}%")
+        if threshold_data["mode"] == "range":
+            col3.metric("Intervention Threshold", f"{threshold_data['lower']:.0%} – {threshold_data['upper']:.0%}")
+        else:
+            col3.metric("Intervention Threshold", f"{threshold_data['lower']:.0%}")
         st.caption(f"MLflow run ID: `{info.get('run_id', '—')}`")
         if info.get("challenger"):
             st.divider()
