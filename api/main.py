@@ -41,7 +41,9 @@ MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5050")
 INTERVENTION_THRESHOLD = 0.30  # fallback if meta not loaded
 
 pipeline = None
+pipeline_challenger = None
 model_meta = {}
+challenger_meta = {}
 
 # Runtime threshold config
 threshold_config = {
@@ -64,6 +66,16 @@ def load_model():
 
     model_uri = f"runs:/{run_id}/model"
     pipeline = mlflow.sklearn.load_model(model_uri)
+
+    challenger = full_meta.get("challenger")
+    if challenger and challenger.get("run_id"):
+        try:
+            challenger_uri = f"runs:/{challenger['run_id']}/model"
+            pipeline_challenger = mlflow.sklearn.load_model(challenger_uri)
+            challenger_meta.update(challenger)
+            print(f"✅ Loaded challenger model run_id='{challenger['run_id']}'")
+        except Exception as e:
+            print(f"⚠️ Could not load challenger model: {e}")
 
     model_meta = {
         "model_name": champion.get("model_name", "—"),
@@ -198,6 +210,7 @@ class SessionFeatures(BaseModel):
     TrafficType: int = Field(2, ge=1)
     VisitorType: str = Field("Returning_Visitor", description="Returning_Visitor | New_Visitor | Other")
     Weekend: bool = Field(False)
+    use_challenger: bool = Field(False, description="If True, use challenger model instead of champion")
 
     class Config:
         json_schema_extra = {
@@ -241,6 +254,7 @@ class ThresholdConfig(BaseModel):
 
 class BatchRequest(BaseModel):
     sessions: list[SessionFeatures]
+    use_challenger: bool = False
 
 
 class BatchResult(BaseModel):
@@ -254,15 +268,16 @@ class BatchResult(BaseModel):
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _predict_session(session: SessionFeatures) -> PredictionResult:
-    if pipeline is None:
+def _predict_session(session: SessionFeatures, use_challenger: bool = False) -> PredictionResult:
+    use_challenger = use_challenger and pipeline_challenger is not None
+    active_pipeline = pipeline_challenger if use_challenger else pipeline
+    active_name = challenger_meta.get("model_name", "unknown") if use_challenger else model_meta.get("model_name", "unknown")
+
+    if active_pipeline is None:
         raise HTTPException(status_code=503, detail="Model not loaded")
 
-    model_name = model_meta.get("model_name", "unknown")
-
     df = session_dict_to_dataframe(session.model_dump())
-
-    prob_purchase = float(pipeline.predict_proba(df)[0, 1])
+    prob_purchase = float(active_pipeline.predict_proba(df)[0, 1])
     prob_no_purchase = 1.0 - prob_purchase
     prediction = int(pipeline.predict(df)[0])
 
@@ -322,6 +337,7 @@ async def model_info():
 
 @app.post("/predict", response_model=PredictionResult, tags=["Prediction"])
 async def predict(session: SessionFeatures):
+    return _predict_session(session, use_challenger=session.use_challenger)
     """
     Score a single browser session.
 
@@ -332,19 +348,12 @@ async def predict(session: SessionFeatures):
 
 @app.post("/predict-batch", response_model=BatchResult, tags=["Prediction"])
 async def predict_batch(batch: BatchRequest):
-    """
-    Score multiple sessions at once.
-
-    Returns per-session results plus aggregate intervention statistics.
-    """
     if len(batch.sessions) == 0:
         raise HTTPException(status_code=400, detail="sessions list must not be empty")
     if len(batch.sessions) > 25000:
         raise HTTPException(status_code=400, detail="Max 25,000 sessions per batch")
-
-    results = [_predict_session(s) for s in batch.sessions]
+    results = [_predict_session(s, use_challenger=batch.use_challenger) for s in batch.sessions]
     intervention_count = sum(1 for r in results if r.intervene)
-
     return BatchResult(
         results=results,
         total_sessions=len(results),

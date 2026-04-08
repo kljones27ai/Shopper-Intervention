@@ -77,13 +77,17 @@ def call_predict(payload: dict):
         return None, str(e)
 
 
-def call_predict_batch(sessions: list[dict]):
+def call_predict_batch(sessions: list[dict], use_challenger: bool = False):
     try:
-        r = requests.post(f"{API_URL}/predict-batch", json={"sessions": sessions}, timeout=180)
+        r = requests.post(
+            f"{API_URL}/predict-batch",
+            json={"sessions": sessions, "use_challenger": use_challenger},
+            timeout=180
+        )
         r.raise_for_status()
         return r.json(), None
     except requests.exceptions.ConnectionError:
-        return None, "❌ Cannot reach API. Is `uvicorn api.main:app --port 8000` running?"
+        return None, "❌ Cannot reach API."
     except Exception as e:
         return None, str(e)
 
@@ -322,6 +326,25 @@ with tab2:
     st.header("Score a Single Session")
     st.caption("Enter session features and get a real-time purchase prediction + intervention decision.")
 
+    # Check if challenger is available
+    has_challenger = bool(model_meta.get("challenger")) if "model_meta" in dir() else False
+    try:
+        info = requests.get(f"{API_URL}/model-info", timeout=3).json()
+        has_challenger = bool(info.get("challenger"))
+        challenger_name = info.get("challenger", {}).get("model_name", "Challenger")
+    except Exception:
+        has_challenger = False
+        challenger_name = "Challenger"
+    
+    model_choice = st.radio(
+        "Model",
+        ["Champion", f"Challenger ({challenger_name})"] if has_challenger else ["Champion"],
+        horizontal=True,
+        key="model_choice_single",
+        help="Select which model to score with. Challenger is only available after a training run produces one."
+    )
+    use_challenger = "Challenger" in model_choice
+
     with st.form("session_form"):
         st.subheader("Page Interactions")
         c1, c2, c3 = st.columns(3)
@@ -375,6 +398,7 @@ with tab2:
             "TrafficType": int(traffic),
             "VisitorType": visitor,
             "Weekend": weekend,
+            "use_challenger": use_challenger,
         }
 
         result, err = call_predict(payload)
@@ -444,6 +468,23 @@ with tab3:
 
     st.info(f"CSV must contain columns: `{', '.join(REQUIRED_COLS)}`")
 
+    # Model selector
+    try:
+        info = requests.get(f"{API_URL}/model-info", timeout=3).json()
+        has_challenger = bool(info.get("challenger"))
+        challenger_name = info.get("challenger", {}).get("model_name", "Challenger")
+    except Exception:
+        has_challenger = False
+        challenger_name = "Challenger"
+    
+    model_choice_batch = st.radio(
+        "Model",
+        ["Champion", f"Challenger ({challenger_name})"] if has_challenger else ["Champion"],
+        horizontal=True,
+        key="model_choice_batch",
+    )
+    use_challenger_batch = "Challenger" in model_choice_batch
+
     use_sample = st.checkbox("Use a sample from the training dataset (first 50 rows)", value=True)
 
     uploaded = None
@@ -475,7 +516,7 @@ with tab3:
             sessions.append(d)
 
         with st.spinner(f"Scoring {len(sessions)} sessions..."):
-            batch_result, err = call_predict_batch(sessions)
+            batch_result, err = call_predict_batch(sessions, use_challenger=use_challenger_batch)
 
         if err:
             st.error(err)
