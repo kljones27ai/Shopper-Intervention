@@ -611,13 +611,15 @@ with tab5:
         if result["status"] == "already_running":
             st.info("⏳ A training run is already in progress.")
         else:
-            st.info("Training started — polling every 5 seconds...")
+            status_placeholder = st.empty()
+            status_placeholder.info("Training started — polling every 5 seconds...")
             with st.spinner("Training in progress..."):
                 while True:
                     time.sleep(5)
                     status = requests.get(f"{API_URL}/retrain-status").json()
                     if not status["running"]:
                         break
+            status_placeholder.empty()
 
             if status["last_result"] == "success":
                 st.success(
@@ -626,6 +628,10 @@ with tab5:
                     f"**ROC-AUC:** {status['roc_auc']:.4f}  \n"
                     f"**Version:** {status['version']}"
                 )
-                st.balloons()
+                #st.balloons()
             else:
                 st.error(f"❌ Training failed: {status['last_result']}")
+
+    st.divider()
+    st.subheader("How the Preprocessing Pipeline Works")
+    st.markdown("Raw session data is preprocessed through a shared pipeline used by both training and inference. Numeric features — such as page counts, durations, bounce and exit rates, and page values — are median-imputed to handle missing values and then standardized with zero mean and unit variance. Categorical features — including month, visitor type, operating system, browser, region, traffic type, and weekend flag — are mode-imputed and one-hot encoded. Any unknown categories seen at inference time are ignored rather than causing an error. The same preprocessor is fit during training and applied consistently at prediction time, ensuring no data leakage.")
