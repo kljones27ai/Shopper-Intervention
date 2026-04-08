@@ -93,12 +93,6 @@ def call_predict_batch(sessions: list[dict]):
 # ---------------------------------------------------------------------------
 
 with st.sidebar:
-    # Fetch threshold config once for use throughout the app
-    try:
-        threshold_data = requests.get(f"{API_URL}/threshold", timeout=3).json()
-    except Exception:
-        threshold_data = {"mode": "lower", "lower": 0.30, "upper": 0.70}
-
     st.title("🛒 Shopper Intervention")
     st.caption("Predict & intervene before customers leave")
     st.divider()
@@ -153,19 +147,30 @@ with st.sidebar:
 
     st.markdown("**Debug**")
     st.sidebar.caption(f"API: {API_URL}")
-    healthy, health_data = api_health()
-    if healthy:
-        st.success(f"API online ✅")
-        st.caption(f"Model: **{health_data.get('model', '?')}**")
-        st.caption(f"ROC-AUC: **{health_data.get('roc_auc', '?')}**")
-        if threshold_data.get("mode", "lower") == "range":
-            st.caption(f"Threshold: **{threshold_data.get('lower', 0.30):.0%} – {threshold_data.get('upper', 0.70):.0%}** (range)")
-        else:
-            st.caption(f"Threshold: **{threshold_data.get('lower', 0.30):.0%}** (below)")
-    else:
-        st.error("API offline ❌")
-        st.caption("Run: `uvicorn api.main:app --reload --port 8000`")
-
+    
+	healthy, health_data = api_health()
+	if healthy:
+		try:
+			threshold_data = requests.get(f"{API_URL}/threshold", timeout=3).json()
+			threshold_data.setdefault("mode", "lower")
+			threshold_data.setdefault("lower", 0.30)
+			threshold_data.setdefault("upper", 0.70)
+		except Exception:
+			threshold_data = {"mode": "lower", "lower": 0.30, "upper": 0.70}
+	
+		st.success(f"API online ✅")
+		st.caption(f"Model: **{health_data.get('model', '?')}**")
+		st.caption(f"ROC-AUC: **{health_data.get('roc_auc', '?')}**")
+		if threshold_data.get("mode", "lower") == "range":
+			st.caption(f"Threshold: **{threshold_data.get('lower', 0.30):.0%} – {threshold_data.get('upper', 0.70):.0%}** (range)")
+		else:
+			st.caption(f"Threshold: **{threshold_data.get('lower', 0.30):.0%}** (below)")
+	else:
+		threshold_data = {"mode": "lower", "lower": 0.30, "upper": 0.70}
+		st.error("API offline ❌")
+    
+    st.caption("Run: `uvicorn api.main:app --reload --port 8000`")
+    
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📊 Dataset Explorer",
     "🎯 Score a Session",
