@@ -363,10 +363,10 @@ def main():
 
     results = []
     for model_name, estimator, params in model_configs:
-    run_id, roc_auc, pipeline = train_and_log(
-        model_name, estimator, params, X_train, X_test, y_train, y_test, preprocessor, numeric_imputer_strategy=numeric_imputer_strategy, excluded_features=excluded_features,
-    )
-    results.append((model_name, run_id, roc_auc, pipeline))
+        run_id, roc_auc, pipeline = train_and_log(
+            model_name, estimator, params, X_train, X_test, y_train, y_test, preprocessor, numeric_imputer_strategy=numeric_imputer_strategy, excluded_features=excluded_features,
+        )
+        results.append((model_name, run_id, roc_auc, pipeline))
 
     best = max(results, key=lambda r: r[2])
     best_name, best_run_id, best_auc, best_pipeline = best
