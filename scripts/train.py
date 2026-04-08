@@ -21,6 +21,7 @@ from pathlib import Path
 
 import mlflow
 import mlflow.sklearn
+from mlflow import MLflowClient
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -350,6 +351,27 @@ def main():
     meta_path = Path("models/best_model_meta.json")
     meta_path.parent.mkdir(exist_ok=True)
     meta_path.write_text(json.dumps(meta, indent=2))
+
+    client = MlflowClient()
+    
+    # Register champion
+    champion_uri = f"runs:/{best_run_id}/model"
+    champion_mv = mlflow.register_model(champion_uri, MODEL_REGISTRY_NAME)
+    client.set_registered_model_alias(
+        MODEL_REGISTRY_NAME, "champion", champion_mv.version
+    )
+    print(f"✅ Champion registered: v{champion_mv.version} ({best_name})")
+    
+    # Register challenger (if exists)
+    if "challenger" in meta:
+        challenger_run_id = meta["challenger"]["run_id"]
+        challenger_uri = f"runs:/{challenger_run_id}/model"
+        challenger_mv = mlflow.register_model(challenger_uri, MODEL_REGISTRY_NAME)
+        client.set_registered_model_alias(
+            MODEL_REGISTRY_NAME, "challenger", challenger_mv.version
+        )
+        print(f"✅ Challenger registered: v{challenger_mv.version} ({meta['challenger']['model_name']})")
+    
     print(f"✅ Model metadata saved → {meta_path}")
     
     print("\n📊 Model Leaderboard (Test ROC-AUC):")
