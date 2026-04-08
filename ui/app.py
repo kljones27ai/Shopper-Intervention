@@ -335,7 +335,7 @@ with tab2:
     except Exception:
         has_challenger = False
         challenger_name = "Challenger"
-    
+
 	model_choice = st.radio(
 		"Model",
 		[f"Champion ({champion_name})", f"Challenger ({challenger_name})"] if has_challenger else [f"Champion ({champion_name})"],
@@ -476,7 +476,7 @@ with tab3:
     except Exception:
         has_challenger = False
         challenger_name = "Challenger"
-    
+
     model_choice = st.radio(
         "Model",
         [f"Champion ({champion_name})", f"Challenger ({challenger_name})"] if has_challenger else [f"Champion ({champion_name})"],
