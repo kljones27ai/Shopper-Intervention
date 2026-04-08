@@ -66,10 +66,10 @@ def load_model():
     pipeline = mlflow.sklearn.load_model(model_uri)
 
     model_meta = {
-        "model_name": champion["model_name"],
-        "run_id": run_id,
-        "roc_auc": champion["roc_auc"],
-        "intervention_threshold": champion["intervention_threshold"],
+        "model_name": champion.get("model_name", "—"),
+        "run_id": champion.get("run_id", "—"),
+        "roc_auc": champion.get("roc_auc", 0.0),
+        "intervention_threshold": champion.get("intervention_threshold", 0.30),
         "version": champion.get("version", "—"),
         "challenger": full_meta.get("challenger"),
     }
