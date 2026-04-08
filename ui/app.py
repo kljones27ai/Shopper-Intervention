@@ -148,26 +148,26 @@ with st.sidebar:
     st.markdown("**Debug**")
     st.sidebar.caption(f"API: {API_URL}")
     
-	healthy, health_data = api_health()
-	if healthy:
-		try:
-			threshold_data = requests.get(f"{API_URL}/threshold", timeout=3).json()
-			threshold_data.setdefault("mode", "lower")
-			threshold_data.setdefault("lower", 0.30)
-			threshold_data.setdefault("upper", 0.70)
-		except Exception:
-			threshold_data = {"mode": "lower", "lower": 0.30, "upper": 0.70}
-	
-		st.success(f"API online ✅")
-		st.caption(f"Model: **{health_data.get('model', '?')}**")
-		st.caption(f"ROC-AUC: **{health_data.get('roc_auc', '?')}**")
-		if threshold_data.get("mode", "lower") == "range":
-			st.caption(f"Threshold: **{threshold_data.get('lower', 0.30):.0%} – {threshold_data.get('upper', 0.70):.0%}** (range)")
-		else:
-			st.caption(f"Threshold: **{threshold_data.get('lower', 0.30):.0%}** (below)")
-	else:
-		threshold_data = {"mode": "lower", "lower": 0.30, "upper": 0.70}
-		st.error("API offline ❌")
+    healthy, health_data = api_health()
+    if healthy:
+        try:
+            threshold_data = requests.get(f"{API_URL}/threshold", timeout=3).json()
+            threshold_data.setdefault("mode", "lower")
+            threshold_data.setdefault("lower", 0.30)
+            threshold_data.setdefault("upper", 0.70)
+        except Exception:
+            threshold_data = {"mode": "lower", "lower": 0.30, "upper": 0.70}
+    
+        st.success(f"API online ✅")
+        st.caption(f"Model: **{health_data.get('model', '?')}**")
+        st.caption(f"ROC-AUC: **{health_data.get('roc_auc', '?')}**")
+        if threshold_data.get("mode", "lower") == "range":
+            st.caption(f"Threshold: **{threshold_data.get('lower', 0.30):.0%} – {threshold_data.get('upper', 0.70):.0%}** (range)")
+        else:
+            st.caption(f"Threshold: **{threshold_data.get('lower', 0.30):.0%}** (below)")
+    else:
+        threshold_data = {"mode": "lower", "lower": 0.30, "upper": 0.70}
+        st.error("API offline ❌")
     
     st.caption("Run: `uvicorn api.main:app --reload --port 8000`")
     
