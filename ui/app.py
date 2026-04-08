@@ -97,18 +97,6 @@ with st.sidebar:
     st.caption("Predict & intervene before customers leave")
     st.divider()
 
-    healthy, health_data = api_health()
-    if healthy:
-        st.success(f"API online ✅")
-        st.caption(f"Model: **{health_data.get('model', '?')}**")
-        st.caption(f"ROC-AUC: **{health_data.get('roc_auc', '?')}**")
-        threshold = health_data.get("intervention_threshold", 0.30)
-        st.caption(f"Threshold: **{threshold}**")
-    else:
-        st.error("API offline ❌")
-        st.caption("Run: `uvicorn api.main:app --reload --port 8000`")
-
-    st.divider()
     st.markdown("**Intervention Threshold**")
     
     # Load current config from API
@@ -154,11 +142,21 @@ with st.sidebar:
             })
             st.success("✅ Threshold updated")
         except Exception:
-            st.error("Could not reach API")
-        
+            st.error("Could not reach API")        
     st.divider()
+
     st.markdown("**Debug**")
     st.sidebar.caption(f"API: {API_URL}")
+    healthy, health_data = api_health()
+    if healthy:
+        st.success(f"API online ✅")
+        st.caption(f"Model: **{health_data.get('model', '?')}**")
+        st.caption(f"ROC-AUC: **{health_data.get('roc_auc', '?')}**")
+        threshold = health_data.get("intervention_threshold", 0.30)
+        st.caption(f"Threshold: **{threshold}**")
+    else:
+        st.error("API offline ❌")
+        st.caption("Run: `uvicorn api.main:app --reload --port 8000`")
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📊 Dataset Explorer",
