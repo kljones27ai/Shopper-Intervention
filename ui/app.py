@@ -168,8 +168,7 @@ with st.sidebar:
     else:
         threshold_data = {"mode": "lower", "lower": 0.30, "upper": 0.70}
         st.error("API offline ❌")
-    
-    st.caption("Run: `uvicorn api.main:app --reload --port 8000`")
+        st.caption("Run: `uvicorn api.main:app --reload --port 8000`")
     
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📊 Dataset Explorer",
