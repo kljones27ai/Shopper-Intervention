@@ -323,7 +323,6 @@ with tab1:
 # ===========================================================================
 
 with tab2:
-    champion_name = info.get("model_name", "Champion")
     st.header("Score a Single Session")
     st.caption("Enter session features and get a real-time purchase prediction + intervention decision.")
 
@@ -337,11 +336,11 @@ with tab2:
         has_challenger = False
         challenger_name = "Challenger"
     
-    model_choice = st.radio(
-        "Model",
-        [f"Champion ({champion_name})", f"Challenger ({challenger_name})"] if has_challenger else ["Champion"],
-        horizontal=True,
-        key="model_choice_single",
+	model_choice = st.radio(
+		"Model",
+		[f"Champion ({champion_name})", f"Challenger ({challenger_name})"] if has_challenger else [f"Champion ({champion_name})"],
+		horizontal=True,
+		key="model_choice_single",
         help="Select which model to score with. Challenger is only available after a training run produces one."
     )
     use_challenger = "Challenger" in model_choice
@@ -458,7 +457,6 @@ with tab2:
 # ===========================================================================
 
 with tab3:
-    champion_name = info.get("model_name", "Champion")
     st.header("Batch Session Scoring")
     st.caption("Upload a CSV of sessions to score them all at once and identify intervention candidates. Recommended file size is about 1,500 rows.")
 
@@ -479,11 +477,11 @@ with tab3:
         has_challenger = False
         challenger_name = "Challenger"
     
-    model_choice_batch = st.radio(
+    model_choice = st.radio(
         "Model",
-        [f"Champion ({champion_name})", f"Challenger ({challenger_name})"] if has_challenger else ["Champion"],
+        [f"Champion ({champion_name})", f"Challenger ({challenger_name})"] if has_challenger else [f"Champion ({champion_name})"],
         horizontal=True,
-        key="model_choice_batch",
+        key="model_choice_single",
     )
     use_challenger_batch = "Challenger" in model_choice_batch
 
