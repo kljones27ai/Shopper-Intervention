@@ -16,6 +16,7 @@ import json
 import io
 import os
 import time
+import hashlib
 from pathlib import Path
 
 import pandas as pd
@@ -197,6 +198,33 @@ with st.sidebar:
 
         with st.expander("⚙️ Threshold Config", expanded=False):
             st.json(threshold_data)
+
+        with st.expander("🗂️ Data Version (DVC)", expanded=False):
+            dvc_file = ROOT / "data" / "online_shoppers_intention.csv.dvc"
+            try:
+                import yaml
+                dvc_meta = yaml.safe_load(dvc_file.read_text())
+                tracked = dvc_meta["outs"][0]
+                tracked_md5 = tracked.get("md5", "unknown")
+                tracked_size = tracked.get("size")
+                st.caption(f"Tracked MD5: `{tracked_md5}`")
+                if tracked_size:
+                    st.caption(f"Tracked size: `{tracked_size:,}` bytes")
+            except Exception as e:
+                st.warning(f"Could not read .dvc file: {e}")
+                tracked_md5 = None
+
+            if DATA_PATH.exists():
+                actual_size = DATA_PATH.stat().st_size
+                st.caption(f"CSV present: ✅ (`{actual_size:,}` bytes)")
+                if tracked_md5 and tracked_md5 != "unknown":
+                    actual_md5 = hashlib.md5(DATA_PATH.read_bytes()).hexdigest()
+                    if actual_md5 == tracked_md5:
+                        st.success("Hash match ✅")
+                    else:
+                        st.error(f"Hash mismatch ❌\nActual: `{actual_md5}`")
+            else:
+                st.caption("CSV present: ❌ (not downloaded yet)")
 
         with st.expander("🔗 Links", expanded=False):
             st.markdown("[📂 Training Data (GitHub)](https://github.com/smbrownai/shopper_intervention/blob/main/data/online_shoppers_intention.csv)")
