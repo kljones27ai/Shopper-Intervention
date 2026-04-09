@@ -304,8 +304,17 @@ def main():
     models_dir.mkdir(exist_ok=True)
 
     if not data_path.exists():
-        print(f"ERROR: data file not found: {data_path}")
-        sys.exit(1)
+        print(f"⬇️  Data file not found locally, fetching from DagHub ...")
+        import pandas as pd
+        import urllib.request
+        data_url = "https://dagshub.com/smbrownai/shopper_intervention/raw/main/data/online_shoppers_intention.csv"
+        try:
+            data_path.parent.mkdir(parents=True, exist_ok=True)
+            urllib.request.urlretrieve(data_url, str(data_path))
+            print(f"   ✅ Downloaded to {data_path}")
+        except Exception as e:
+            print(f"ERROR: could not fetch data: {e}")
+            sys.exit(1)
 
     print(f"\n📂 Loading data from {data_path} ...")
     import pandas as pd
