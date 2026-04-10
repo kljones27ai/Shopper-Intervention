@@ -123,7 +123,7 @@ def load_model():
     if "threshold_config" in full_meta:
         threshold_config.update(full_meta["threshold_config"])
 
-    print(f"✅ Loaded champion model run_id='{run_id}' from {model_uri}")
+    print(f"✅ Loaded champion model run_id='{run_id}' from {champion_uri}")
     
     
 # ---------------------------------------------------------------------------
