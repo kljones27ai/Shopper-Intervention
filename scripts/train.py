@@ -39,7 +39,9 @@ from sklearn.metrics import (
 from sklearn.pipeline import Pipeline
 
 import dagshub.auth
-dagshub.auth.add_app_token(token=os.getenv("DAGSHUB_TOKEN", ""))
+_dagshub_token = os.getenv("DAGSHUB_TOKEN", "")
+if _dagshub_token:
+    dagshub.auth.add_app_token(token=_dagshub_token)
 import dagshub
 dagshub.init(repo_owner='smbrownai', repo_name='shopper_intervention', mlflow=True)
 
