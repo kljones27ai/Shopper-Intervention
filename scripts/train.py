@@ -411,30 +411,26 @@ def main():
 
     client = MlflowClient()
 
-    # Set top-level registered model description (purpose, inputs, outputs — shared across all versions)
-    try:
-        client.update_registered_model(
-            name=MODEL_REGISTRY_NAME,
-            description=(
-                "Shopper purchase-intent classifier for e-commerce session intervention.\n\n"
-                "Predicts P(purchase) for a browsing session using 17 behavioral and temporal features "
-                "(page views, bounce rates, session duration, month, visitor type, etc.).\n\n"
-                f"Sessions with P(purchase) < intervention_threshold (default {INTERVENTION_THRESHOLD}) "
-                "are flagged for promotional intervention.\n\n"
-                "Champion/challenger versions are maintained so the API can A/B compare models at runtime. "
-                "Primary selection metric: ROC-AUC on a held-out 20% test split.\n\n"
-                "Training data: UCI Online Shoppers Intention dataset (12,330 sessions, ~16% purchase rate)."
-            ),
-        )
-    except Exception:
-        pass  # Model may not exist yet on first run; mlflow.register_model creates it
-
     import datetime
     trained_at = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
+
+    REGISTERED_MODEL_DESCRIPTION = (
+        "Shopper purchase-intent classifier for e-commerce session intervention.\n\n"
+        "Predicts P(purchase) for a browsing session using 17 behavioral and temporal features "
+        "(page views, bounce rates, session duration, month, visitor type, etc.).\n\n"
+        f"Sessions with P(purchase) < intervention_threshold (default {INTERVENTION_THRESHOLD}) "
+        "are flagged for promotional intervention.\n\n"
+        "Champion/challenger versions are maintained so the API can A/B compare models at runtime. "
+        "Primary selection metric: ROC-AUC on a held-out 20% test split.\n\n"
+        "Training data: UCI Online Shoppers Intention dataset (12,330 sessions, ~16% purchase rate)."
+    )
 
     # Register champion
     champion_uri = f"runs:/{best_run_id}/model"
     champion_mv = mlflow.register_model(champion_uri, MODEL_REGISTRY_NAME)
+
+    # Set top-level registered model description after the model is guaranteed to exist
+    client.update_registered_model(name=MODEL_REGISTRY_NAME, description=REGISTERED_MODEL_DESCRIPTION)
     client.set_registered_model_alias(
         MODEL_REGISTRY_NAME, "champion", champion_mv.version
     )
