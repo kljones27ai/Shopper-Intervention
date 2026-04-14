@@ -1,8 +1,16 @@
 # 🛒 Online Shopper Intervention System
 
-Predicts e-commerce sessions **unlikely to convert** so a promotional incentive can be
-offered in real time. Built as a full ML portfolio project with a training pipeline,
-REST API, and interactive dashboard. Judy 
+An end-to-end machine learning project that predicts which e-commerce sessions are unlikely to convert, enabling targeted promotional interventions in real time.
+
+**Project Team:** Oladele Awonusi, Shawn Brown, Judith Geraci, Kristin Jones, Hoda Nassar
+
+## Problem Overview
+
+Co-Mart, a fictional online clothing retailer, spends heavily to bring visitors to its website, yet only **15.5% of sessions lead to a purchase**. In the dataset used for this project, that corresponds to **1,908 purchases out of 12,330 sessions**.
+
+To increase conversions, Co-Mart is considering a **15% discount offer**. The challenge is that offering discounts to every visitor would reduce margins and generate too many wasted incentives.
+
+This project uses machine learning to identify sessions that are likely to end without a purchase and are better candidates for targeted intervention.
 
 ## Live Demo
 - **Dashboard:** [shopintervene.streamlit.app](https://shopintervene.streamlit.app)
