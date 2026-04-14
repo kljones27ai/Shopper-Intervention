@@ -2,7 +2,7 @@
 
 Predicts e-commerce sessions **unlikely to convert** so a promotional incentive can be
 offered in real time. Built as a full ML portfolio project with a training pipeline,
-REST API, and interactive dashboard.
+REST API, and interactive dashboard. Judy 
 
 ## Live Demo
 - **Dashboard:** [shopintervene.streamlit.app](https://shopintervene.streamlit.app)
