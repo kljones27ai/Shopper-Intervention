@@ -156,3 +156,11 @@ The dataset is imbalanced (~84% no purchase, ~16% purchase). All models use
 
 UCI ML Repository — [Online Shoppers Purchasing Intention Dataset](https://archive.ics.uci.edu/ml/datasets/Online+Shoppers+Purchasing+Intention+Dataset)  
 12,330 sessions | 18 features | Binary classification
+
+## Team Members (Group 2)
+
+- **Oladele Awonusi**
+- **Shawn Brown**
+- **Judith Geraci**
+- **Kristin Jones**
+- **Hoda Nassar**
